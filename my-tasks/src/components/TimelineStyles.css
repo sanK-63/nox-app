@@ -1,0 +1,115 @@
+.timeline-container {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.timeline-header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.01);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.timeline-days-row {
+  display: flex;
+  min-width: 1500px;
+}
+
+.timeline-day-col {
+  flex: 1;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid var(--border);
+}
+
+.day-name {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.day-num {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timeline-body {
+  position: relative;
+  min-width: 1500px;
+  flex: 1;
+  padding: 12px 0;
+}
+
+.timeline-grid-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  pointer-events: none;
+}
+
+.grid-line {
+  flex: 1;
+  border-right: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.timeline-rows {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-row {
+  height: 28px;
+  position: relative;
+  width: 100%;
+}
+
+.timeline-bar {
+  position: absolute;
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 2;
+}
+
+.timeline-bar:hover {
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 10;
+}
+
+.bar-title {
+  font-size: 11px;
+  color: white;
+}
+
+/* Priority Colors - Zen style (subtle) */
+.priority-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+.priority-medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); }
+.priority-low { background: rgba(124, 58, 237, 0.2); color: #7c3aed; border-color: rgba(124, 58, 237, 0.4); }
+
+.timeline-bar.completed {
+  opacity: 0.3;
+  text-decoration: line-through;
+}

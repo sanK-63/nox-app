@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+dist/
+dist-electron/
+release/
+
+# DB
+*.db
+*.db-journal
+
+# Env
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
