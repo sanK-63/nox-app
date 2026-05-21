@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './CalendarStyles.css';
 
 const TaskCalendar = ({ tasks, onTaskClick }) => {
-  const [viewDate, setViewDate] = useState(new Date(2026, 3, 1));
+  const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
 
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
