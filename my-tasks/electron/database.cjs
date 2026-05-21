@@ -44,6 +44,7 @@ function initDb(app) {
       deadline TEXT,
       description TEXT,
       task_type TEXT DEFAULT 'quick',
+      archived_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS subtasks (
@@ -66,11 +67,24 @@ function initDb(app) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      color TEXT DEFAULT '#8b5cf6'
+    );
+    CREATE TABLE IF NOT EXISTS task_tags (
+      task_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+      PRIMARY KEY (task_id, tag_id),
+      FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    );
   `);
 
   try { db.exec("ALTER TABLE tasks ADD COLUMN start_date TEXT;"); } catch(e) {}
   try { db.exec("ALTER TABLE tasks ADD COLUMN description TEXT;"); } catch(e) {}
   try { db.exec("ALTER TABLE tasks ADD COLUMN task_type TEXT DEFAULT 'quick';"); } catch(e) {}
+  try { db.exec("ALTER TABLE tasks ADD COLUMN archived_at DATETIME;"); } catch(e) {}
 
   console.log('Database initialized:', dbPath);
   checkDeadlines();
@@ -97,7 +111,12 @@ function setupDatabaseHandlers(ipcMain, app) {
     const tasks = db.prepare('SELECT * FROM tasks ORDER BY deadline ASC, created_at DESC').all();
     return tasks.map(task => {
       const subtasks = db.prepare('SELECT * FROM subtasks WHERE task_id = ?').all(task.id);
-      return { ...task, subtasks };
+      const tags = db.prepare(`
+        SELECT t.* FROM tags t
+        JOIN task_tags tt ON tt.tag_id = t.id
+        WHERE tt.task_id = ?
+      `).all(task.id);
+      return { ...task, subtasks, tags };
     });
   });
   
@@ -115,7 +134,8 @@ function setupDatabaseHandlers(ipcMain, app) {
   
   ipcMain.handle('toggle-task', (event, { id, is_completed }) => {
     const status = is_completed ? 1 : 0;
-    db.prepare('UPDATE tasks SET is_completed = ? WHERE id = ?').run(status, id);
+    db.prepare('UPDATE tasks SET is_completed = ?, archived_at = ? WHERE id = ?')
+      .run(status, status === 1 ? new Date().toISOString() : null, id);
     if (status === 1) {
       db.prepare('UPDATE subtasks SET is_completed = 1 WHERE task_id = ?').run(id);
     }
@@ -128,7 +148,6 @@ function setupDatabaseHandlers(ipcMain, app) {
   ipcMain.handle('toggle-subtask', (event, { id, is_completed }) => {
     db.prepare('UPDATE subtasks SET is_completed = ? WHERE id = ?').run(is_completed ? 1 : 0, id);
     
-    // Auto-update parent task
     const st = db.prepare('SELECT task_id FROM subtasks WHERE id = ?').get(id);
     if (st) {
       const total = db.prepare('SELECT COUNT(*) as count FROM subtasks WHERE task_id = ?').get(st.task_id).count;
@@ -136,9 +155,10 @@ function setupDatabaseHandlers(ipcMain, app) {
       
       if (total > 0) {
         if (total === completed) {
-          db.prepare('UPDATE tasks SET is_completed = 1 WHERE id = ?').run(st.task_id);
+          db.prepare('UPDATE tasks SET is_completed = 1, archived_at = ? WHERE id = ?')
+            .run(new Date().toISOString(), st.task_id);
         } else {
-          db.prepare('UPDATE tasks SET is_completed = 0 WHERE id = ?').run(st.task_id);
+          db.prepare('UPDATE tasks SET is_completed = 0, archived_at = NULL WHERE id = ?').run(st.task_id);
         }
       }
     }
@@ -191,6 +211,34 @@ function setupDatabaseHandlers(ipcMain, app) {
 
   ipcMain.handle('get-attachments', (event, taskId) => {
     return db.prepare('SELECT * FROM attachments WHERE task_id = ?').all(taskId);
+  });
+
+  // --- Tag handlers ---
+  ipcMain.handle('get-tags', () => {
+    return db.prepare('SELECT * FROM tags ORDER BY name ASC').all();
+  });
+
+  ipcMain.handle('add-tag', (event, { name, color }) => {
+    try {
+      const res = db.prepare('INSERT INTO tags (name, color) VALUES (?, ?)').run(name, color || '#8b5cf6');
+      return { id: res.lastInsertRowid, name, color: color || '#8b5cf6' };
+    } catch (e) {
+      return { error: 'Tag already exists' };
+    }
+  });
+
+  ipcMain.handle('delete-tag', (event, id) => {
+    db.prepare('DELETE FROM tags WHERE id = ?').run(id);
+  });
+
+  ipcMain.handle('add-task-tag', (event, { task_id, tag_id }) => {
+    try {
+      db.prepare('INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)').run(task_id, tag_id);
+    } catch (e) {}
+  });
+
+  ipcMain.handle('remove-task-tag', (event, { task_id, tag_id }) => {
+    db.prepare('DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?').run(task_id, tag_id);
   });
 }
 
