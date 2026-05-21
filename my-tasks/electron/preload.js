@@ -13,6 +13,11 @@ contextBridge.exposeInMainWorld('api', {
   selectFile: () => ipcRenderer.invoke('select-file'),
   saveAttachment: (data) => ipcRenderer.invoke('save-attachment', data),
   getAttachments: (taskId) => ipcRenderer.invoke('get-attachments', taskId),
+  getTags: () => ipcRenderer.invoke('get-tags'),
+  addTag: (data) => ipcRenderer.invoke('add-tag', data),
+  deleteTag: (id) => ipcRenderer.invoke('delete-tag', id),
+  addTaskTag: (data) => ipcRenderer.invoke('add-task-tag', data),
+  removeTaskTag: (data) => ipcRenderer.invoke('remove-task-tag', data),
   nox: {
     auth: () => ipcRenderer.invoke('nox:auth'),
     sync: () => ipcRenderer.invoke('nox:sync'),
