@@ -29,9 +29,7 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
 
   if (!activeTask) return null;
 
-  const saveTask = () => {
-    onSave(activeTask);
-  };
+  const saveTask = () => onSave(activeTask);
 
   const handleAddSubtask = async () => {
     if (!newSubtask.trim()) return;
@@ -90,6 +88,11 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
 
   const priorityLabel = { low: 'Низкий', medium: 'Средний', high: 'Высокий' };
   const typeLabel = { quick: 'Быстрая', project: 'Проект' };
+  const deadlineStr = activeTask?.deadline
+    ? new Date(activeTask.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  const isProject = activeTask?.task_type === 'project';
+  const hasSubtasks = (activeTask?.subtasks?.length || 0) > 0;
 
   return (
     <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
@@ -104,164 +107,148 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
             )}
           </header>
 
+          {/* === TITLE & TYPE === */}
           {isEditing ? (
             <>
               <div className="task-type-toggle">
-                <button
-                  className={`type-btn ${activeTask?.task_type === 'quick' ? 'active' : ''}`}
-                  onClick={() => setActiveTask({ ...activeTask, task_type: 'quick' })}
-                >Быстрая</button>
-                <button
-                  className={`type-btn ${activeTask?.task_type === 'project' ? 'active' : ''}`}
-                  onClick={() => setActiveTask({ ...activeTask, task_type: 'project' })}
-                >Проект</button>
+                <button className={`type-btn ${activeTask?.task_type === 'quick' ? 'active' : ''}`}
+                  onClick={() => setActiveTask({ ...activeTask, task_type: 'quick' })}>Быстрая</button>
+                <button className={`type-btn ${activeTask?.task_type === 'project' ? 'active' : ''}`}
+                  onClick={() => setActiveTask({ ...activeTask, task_type: 'project' })}>Проект</button>
               </div>
-
-              <input
-                className="drawer-title-input"
-                placeholder="Название задачи"
+              <input className="drawer-title-input" placeholder="Название задачи"
                 value={activeTask?.title || ''}
-                onChange={e => setActiveTask({ ...activeTask, title: e.target.value })}
-              />
-
-              <div className="drawer-meta">
-                <div className="meta-item">
-                  <label>Приоритет</label>
-                  <select value={activeTask?.priority || 'low'} onChange={e => setActiveTask({ ...activeTask, priority: e.target.value })}>
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
-                  </select>
-                </div>
-                <div className="meta-item">
-                  <label>Дедлайн</label>
-                  <input type="datetime-local" value={activeTask?.deadline || ''} onChange={e => setActiveTask({ ...activeTask, deadline: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="drawer-section">
-                <label>Теги</label>
-                <div className="tags-picker">
-                  <div className="task-tags-row" style={{ marginBottom: 8 }}>
-                    {activeTask?.tags?.map(tag => (
-                      <span key={tag.id} className="tag-badge removable" style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>
-                        {tag.name}
-                        <button className="tag-remove" onClick={() => onRemoveTaskTag(activeTask.id, tag.id)}>✕</button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="tags-select-row" style={{ display: 'flex', gap: 6 }}>
-                    <input
-                      className="tag-create-input"
-                      placeholder="Новый тег..."
-                      value={newTagName}
-                      onChange={e => setNewTagName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleCreateTag()}
-                      style={{ flex: 1 }}
-                    />
-                    <button className="tag-create-btn" onClick={handleCreateTag}>+</button>
-                    <div className="presets-wrapper" style={{ position: 'relative' }}>
-                      <button className="tag-presets-btn" onClick={() => setShowPresets(!showPresets)}>Пресеты ▾</button>
-                      {showPresets && (
-                        <div className="presets-dropdown">
-                          {TAG_PRESETS.map(p => (
-                            <button key={p.name} className="preset-option" onClick={() => handlePresetTag(p)}>
-                              <span className="preset-dot" style={{ background: p.color }}></span>
-                              {p.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                onChange={e => setActiveTask({ ...activeTask, title: e.target.value })} />
             </>
           ) : (
-            <>
+            <div className="view-title-block">
               <div className="view-type-badge">{typeLabel[activeTask?.task_type] || 'Быстрая'}</div>
               <h2 className="view-title">{activeTask?.title || 'Без названия'}</h2>
-
-              <div className="view-meta">
-                <div className="view-meta-item">
-                  <span className="view-meta-label">Приоритет</span>
-                  <span className={`view-priority ${activeTask?.priority}`}>{priorityLabel[activeTask?.priority] || 'Низкий'}</span>
-                </div>
-                {activeTask?.deadline && (
-                  <div className="view-meta-item">
-                    <span className="view-meta-label">Дедлайн</span>
-                    <span className="view-deadline">{new Date(activeTask.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                  </div>
-                )}
-                {activeTask?.tags?.length > 0 && (
-                  <div className="view-meta-item">
-                    <span className="view-meta-label">Теги</span>
-                    <div className="task-tags-row">
-                      {activeTask.tags.map(tag => (
-                        <span key={tag.id} className="tag-badge" style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>{tag.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {activeTask?.task_type === 'project' && activeTask?.subtasks?.length > 0 && (
-                <div className="drawer-subtasks view-subtasks">
-                  <label>Подзадачи</label>
-                  <div className="subtask-list">
-                    {activeTask.subtasks.map(st => (
-                      <div key={st.id} className="subtask-item">
-                        <input type="checkbox" checked={st.is_completed} onChange={() => toggleSubtask(st.id, st.is_completed)} />
-                        <span className={st.is_completed ? 'completed' : ''} style={{ flex: 1 }}>{st.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTask?.description && (
-                <div className="drawer-section">
-                  <label>Описание</label>
-                  <p className="view-description">{activeTask.description}</p>
-                </div>
-              )}
-            </>
+            </div>
           )}
 
-          {isEditing && activeTask?.task_type === 'project' && (
-            <div className="drawer-subtasks">
-              <label>Подзадачи</label>
-              <div className="subtask-input-row">
-                <input
-                  placeholder="Новый пункт..."
-                  value={newSubtask}
-                  onChange={e => setNewSubtask(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAddSubtask()}
-                />
-                <button onClick={handleAddSubtask}>+</button>
+          {/* === META (priority, deadline, tags) === */}
+          {isEditing ? (
+            <div className="drawer-meta">
+              <div className="meta-item">
+                <label>Приоритет</label>
+                <select value={activeTask?.priority || 'low'}
+                  onChange={e => setActiveTask({ ...activeTask, priority: e.target.value })}>
+                  <option value="low">Низкий</option>
+                  <option value="medium">Средний</option>
+                  <option value="high">Высокий</option>
+                </select>
               </div>
+              <div className="meta-item">
+                <label>Дедлайн</label>
+                <input type="datetime-local" value={activeTask?.deadline || ''}
+                  onChange={e => setActiveTask({ ...activeTask, deadline: e.target.value })} />
+              </div>
+            </div>
+          ) : (
+            <div className="drawer-meta view-meta">
+              <div className="meta-item read">
+                <label>Приоритет</label>
+                <span className={`view-priority ${activeTask?.priority}`}>{priorityLabel[activeTask?.priority] || 'Низкий'}</span>
+              </div>
+              {activeTask?.deadline && (
+                <div className="meta-item read">
+                  <label>Дедлайн</label>
+                  <span className="view-deadline">{deadlineStr}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === TAGS (only in edit mode; view mode shows in meta block) === */}
+          {isEditing && (
+            <div className="drawer-section">
+              <label>Теги</label>
+              <div className="tags-picker">
+                <div className="task-tags-row" style={{ marginBottom: 8 }}>
+                  {activeTask?.tags?.map(tag => (
+                    <span key={tag.id} className="tag-badge removable"
+                      style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>
+                      {tag.name}
+                      <button className="tag-remove" onClick={() => onRemoveTaskTag(activeTask.id, tag.id)}>✕</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="tags-row">
+                  <input className="tag-create-input" placeholder="Новый тег..."
+                    value={newTagName}
+                    onChange={e => setNewTagName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleCreateTag()} />
+                  <button className="tag-create-btn" onClick={handleCreateTag}>+</button>
+                  <div className="presets-wrapper">
+                    <button className="tag-presets-btn" onClick={() => setShowPresets(!showPresets)}>Пресеты ▾</button>
+                    {showPresets && (
+                      <div className="presets-dropdown">
+                        {TAG_PRESETS.map(p => (
+                          <button key={p.name} className="preset-option" onClick={() => handlePresetTag(p)}>
+                            <span className="preset-dot" style={{ background: p.color }}></span>
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isEditing && activeTask?.tags?.length > 0 && (
+            <div className="drawer-section view-tags-section">
+              <label>Теги</label>
+              <div className="task-tags-row">
+                {activeTask.tags.map(tag => (
+                  <span key={tag.id} className="tag-badge"
+                    style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>{tag.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* === SUBTASKS (same wrapper both modes) === */}
+          {(isProject && hasSubtasks) && (
+            <div className={`drawer-subtasks ${!isEditing ? 'view' : ''}`}>
+              <label>Подзадачи</label>
+              {isEditing && (
+                <div className="subtask-input-row">
+                  <input placeholder="Новый пункт..." value={newSubtask}
+                    onChange={e => setNewSubtask(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAddSubtask()} />
+                  <button onClick={handleAddSubtask}>+</button>
+                </div>
+              )}
               <div className="subtask-list">
-                {activeTask.subtasks?.map(st => (
+                {activeTask.subtasks.map(st => (
                   <div key={st.id} className="subtask-item">
-                    <input type="checkbox" checked={st.is_completed} onChange={() => toggleSubtask(st.id, st.is_completed)} />
+                    <input type="checkbox" checked={st.is_completed}
+                      onChange={() => toggleSubtask(st.id, st.is_completed)} />
                     <span className={st.is_completed ? 'completed' : ''} style={{ flex: 1 }}>{st.title}</span>
-                    <button className="action-btn delete-btn" onClick={() => deleteSubtask(st.id)}>✕</button>
+                    {isEditing && <button className="action-btn delete-btn" onClick={() => deleteSubtask(st.id)}>✕</button>}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {isEditing && (
-            <div className="drawer-section">
-              <textarea
-                className="drawer-description"
-                placeholder="Добавьте детали..."
+          {/* === DESCRIPTION (same wrapper both modes) === */}
+          <div className="drawer-section drawer-section-grow">
+            <label>Описание</label>
+            {isEditing ? (
+              <textarea className="drawer-description" placeholder="Добавьте детали..."
                 value={activeTask?.description || ''}
-                onChange={e => setActiveTask({ ...activeTask, description: e.target.value })}
-              />
-            </div>
-          )}
+                onChange={e => setActiveTask({ ...activeTask, description: e.target.value })} />
+            ) : activeTask?.description ? (
+              <p className="view-description">{activeTask.description}</p>
+            ) : (
+              <p className="view-description empty">Нет описания</p>
+            )}
+          </div>
+
         </div>
       </aside>
     </div>
