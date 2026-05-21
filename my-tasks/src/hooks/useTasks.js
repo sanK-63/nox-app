@@ -4,12 +4,16 @@ export function useTasks() {
   const [tasks, setTasks] = useState([]);
 
   const loadTasks = async () => {
-    if (window.api?.getTasks) {
-      const dbTasks = await window.api.getTasks();
-      setTasks(dbTasks);
-    } else {
-      const saved = localStorage.getItem('tasks');
-      if (saved) setTasks(JSON.parse(saved));
+    try {
+      if (window.api?.getTasks) {
+        const dbTasks = await window.api.getTasks();
+        setTasks(dbTasks);
+      } else {
+        const saved = localStorage.getItem('tasks');
+        if (saved) setTasks(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed to load tasks:', e);
     }
   };
 
@@ -18,59 +22,91 @@ export function useTasks() {
   }, []);
 
   const saveTask = async (activeTask) => {
-    if (!activeTask.title.trim()) return;
-    if (window.api?.addTask) {
-      await window.api.addTask(activeTask);
-      loadTasks();
-    } else {
-      const newTask = { ...activeTask, id: activeTask.id || Date.now(), is_completed: 0 };
-      const updated = activeTask.id ? tasks.map(t => t.id === activeTask.id ? activeTask : t) : [newTask, ...tasks];
-      setTasks(updated);
-      localStorage.setItem('tasks', JSON.stringify(updated));
+    try {
+      if (!activeTask.title.trim()) return;
+      if (window.api?.addTask) {
+        await window.api.addTask(activeTask);
+        loadTasks();
+      } else {
+        const newTask = { ...activeTask, id: activeTask.id || Date.now(), is_completed: 0 };
+        const updated = activeTask.id ? tasks.map(t => t.id === activeTask.id ? activeTask : t) : [newTask, ...tasks];
+        setTasks(updated);
+        localStorage.setItem('tasks', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error('Failed to save task:', e);
     }
   };
 
   const toggleTask = async (id, currentStatus) => {
-    if (window.api?.toggleTask) {
-      await window.api.toggleTask({ id, is_completed: !currentStatus });
-      loadTasks();
+    try {
+      if (window.api?.toggleTask) {
+        await window.api.toggleTask({ id, is_completed: !currentStatus });
+        loadTasks();
+      } else {
+        const updated = tasks.map(t => t.id === id ? { ...t, is_completed: !currentStatus } : t);
+        setTasks(updated);
+        localStorage.setItem('tasks', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error('Failed to toggle task:', e);
     }
   };
 
   const deleteTask = async (id) => {
-    if (window.api?.deleteTask) {
-      await window.api.deleteTask(id);
-      loadTasks();
+    try {
+      if (window.api?.deleteTask) {
+        await window.api.deleteTask(id);
+        loadTasks();
+      } else {
+        const updated = tasks.filter(t => t.id !== id);
+        setTasks(updated);
+        localStorage.setItem('tasks', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error('Failed to delete task:', e);
     }
   };
 
   const addSubtaskToTask = async (taskId, title) => {
-    if (!title.trim()) return null;
-    if (taskId && window.api?.addSubtask) {
-      await window.api.addSubtask({ task_id: taskId, title });
-      loadTasks();
-      const updatedTasks = await window.api.getTasks();
-      return updatedTasks.find(t => t.id === taskId);
+    try {
+      if (!title.trim()) return null;
+      if (taskId && window.api?.addSubtask) {
+        await window.api.addSubtask({ task_id: taskId, title });
+        loadTasks();
+        const updatedTasks = await window.api.getTasks();
+        return updatedTasks.find(t => t.id === taskId);
+      }
+    } catch (e) {
+      console.error('Failed to add subtask:', e);
     }
     return null;
   };
 
   const toggleSubtaskInTask = async (taskId, stId, currentStatus) => {
-    if (window.api?.toggleSubtask) {
-      await window.api.toggleSubtask({ id: stId, is_completed: !currentStatus });
-      loadTasks();
-      const updatedTasks = await window.api.getTasks();
-      return updatedTasks.find(t => t.id === taskId);
+    try {
+      if (window.api?.toggleSubtask) {
+        await window.api.toggleSubtask({ id: stId, is_completed: !currentStatus });
+        loadTasks();
+        const updatedTasks = await window.api.getTasks();
+        return updatedTasks.find(t => t.id === taskId);
+      }
+    } catch (e) {
+      console.error('Failed to toggle subtask:', e);
     }
     return null;
   };
 
   const deleteSubtaskFromTask = async (taskId, stId) => {
-    if (window.api?.deleteSubtask) {
-      await window.api.deleteSubtask(stId);
-      loadTasks();
-      const updatedTasks = await window.api.getTasks();
-      return updatedTasks.find(t => t.id === taskId);
+    try {
+      if (window.api?.deleteSubtask) {
+        await window.api.deleteSubtask(stId);
+        loadTasks();
+        const updatedTasks = await window.api.getTasks();
+        return updatedTasks.find(t => t.id === taskId);
+      }
+    } catch (e) {
+      console.error('Failed to delete subtask:', e);
     }
     return null;
   };
