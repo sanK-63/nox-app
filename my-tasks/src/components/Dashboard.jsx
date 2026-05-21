@@ -150,7 +150,7 @@ export default function Dashboard() {
                             {new Date(task.deadline).toLocaleDateString('ru-RU', {day:'numeric', month:'short'})}
                           </span>
                         )}
-                        <button className="action-btn delete-btn" onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}>✕</button>
+                        <button className="action-btn delete-btn" onClick={(e) => { e.stopPropagation(); if (confirm('Удалить задачу?')) deleteTask(task.id); }}>✕</button>
                       </div>
                     </div>
                   );
