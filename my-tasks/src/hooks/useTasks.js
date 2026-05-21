@@ -3,6 +3,7 @@ import { showToast } from '../components/Toast';
 
 export function useTasks() {
   const [tasks, setTasks] = useState([]);
+  const [tags, setTags] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadTasks = async () => {
@@ -22,8 +23,20 @@ export function useTasks() {
     }
   };
 
+  const loadTags = async () => {
+    try {
+      if (window.api?.getTags) {
+        const dbTags = await window.api.getTags();
+        setTags(dbTags);
+      }
+    } catch (e) {
+      showToast('Ошибка загрузки тегов');
+    }
+  };
+
   useEffect(() => {
     loadTasks();
+    loadTags();
   }, []);
 
   const saveTask = async (activeTask) => {
@@ -116,5 +129,54 @@ export function useTasks() {
     return null;
   };
 
-  return { tasks, isLoading, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask };
+  const addTag = async (name, color) => {
+    try {
+      if (window.api?.addTag) {
+        const result = await window.api.addTag({ name, color });
+        if (!result.error) {
+          loadTags();
+          return result;
+        }
+      }
+    } catch (e) {
+      showToast('Ошибка создания тега');
+    }
+    return null;
+  };
+
+  const deleteTag = async (id) => {
+    try {
+      if (window.api?.deleteTag) {
+        await window.api.deleteTag(id);
+        loadTags();
+        loadTasks();
+      }
+    } catch (e) {
+      showToast('Ошибка удаления тега');
+    }
+  };
+
+  const addTaskTag = async (taskId, tagId) => {
+    try {
+      if (window.api?.addTaskTag) {
+        await window.api.addTaskTag({ task_id: taskId, tag_id: tagId });
+        loadTasks();
+      }
+    } catch (e) {
+      showToast('Ошибка добавления тега');
+    }
+  };
+
+  const removeTaskTag = async (taskId, tagId) => {
+    try {
+      if (window.api?.removeTaskTag) {
+        await window.api.removeTaskTag({ task_id: taskId, tag_id: tagId });
+        loadTasks();
+      }
+    } catch (e) {
+      showToast('Ошибка удаления тега с задачи');
+    }
+  };
+
+  return { tasks, tags, isLoading, loadTasks, loadTags, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask, addTag, deleteTag, addTaskTag, removeTaskTag };
 }
