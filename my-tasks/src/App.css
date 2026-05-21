@@ -371,6 +371,19 @@ body {
   transition: var(--transition);
   border: 1px solid var(--border);
 }
+.sync-btn:disabled, .restore-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.sync-btn.syncing::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
 
 .sync-btn.auth {
   background: var(--accent-primary);
@@ -844,6 +857,27 @@ body {
     justify-content: center;
     padding: 12px 0;
   }
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .toast-container {

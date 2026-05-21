@@ -3,9 +3,11 @@ import { showToast } from '../components/Toast';
 
 export function useTasks() {
   const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadTasks = async () => {
     try {
+      setIsLoading(true);
       if (window.api?.getTasks) {
         const dbTasks = await window.api.getTasks();
         setTasks(dbTasks);
@@ -15,6 +17,8 @@ export function useTasks() {
       }
     } catch (e) {
       showToast('Ошибка загрузки задач');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,5 +116,5 @@ export function useTasks() {
     return null;
   };
 
-  return { tasks, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask };
+  return { tasks, isLoading, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask };
 }

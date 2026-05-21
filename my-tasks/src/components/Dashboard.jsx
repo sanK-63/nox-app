@@ -9,7 +9,7 @@ import { useGoogleSync } from '../hooks/useGoogleSync';
 import '../App.css';
 
 export default function Dashboard() {
-  const { tasks, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask } = useTasks();
+  const { tasks, isLoading, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask } = useTasks();
   const syncContext = useGoogleSync(loadTasks);
   const { folders, isFolderPickerOpen, setIsFolderPickerOpen, selectFolder } = syncContext;
 
@@ -111,6 +111,8 @@ export default function Dashboard() {
                 <button className={`filter-chip ${filter === 'urgent' ? 'active' : ''}`} onClick={() => setFilter('urgent')}>Важные</button>
                 <button className={`filter-chip ${filter === 'completed' ? 'active' : ''}`} onClick={() => setFilter('completed')}>Архив</button>
               </div>
+
+              {isLoading && <div className="loading-spinner"><div className="spinner"></div><span>Загрузка задач...</span></div>}
 
               <div className="task-list">
                 {filteredTasks.map(task => {
