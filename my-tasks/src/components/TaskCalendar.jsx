@@ -41,11 +41,12 @@ const TaskCalendar = ({ tasks, onTaskClick }) => {
             const day = i - startOffset + 1;
             const isCurrentMonth = day > 0 && day <= daysInMonth;
             const tasksCount = isCurrentMonth ? getTasksForDay(day).length : 0;
+            const workloadLevel = tasksCount === 0 ? 0 : tasksCount <= 1 ? 1 : tasksCount <= 3 ? 2 : 3;
 
             return (
               <div 
                 key={i} 
-                className={`calendar-cell ${!isCurrentMonth ? 'empty' : ''} ${selectedDay === day ? 'selected' : ''}`}
+                className={`calendar-cell ${!isCurrentMonth ? 'empty' : ''} ${selectedDay === day ? 'selected' : ''} workload-level-${workloadLevel}`}
                 onClick={() => isCurrentMonth && setSelectedDay(day)}
               >
                 {isCurrentMonth && (

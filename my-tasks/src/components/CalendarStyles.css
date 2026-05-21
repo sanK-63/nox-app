@@ -1,17 +1,19 @@
 .calendar-container {
   background: var(--bg-card);
-  padding: 32px;
-  border-radius: 24px;
+  padding: 20px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   backdrop-filter: blur(10px);
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .calendar-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .current-month {
@@ -23,7 +25,7 @@
 .calendar-controls button {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  color: white;
+  color: var(--text-primary);
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -33,7 +35,7 @@
 }
 
 .calendar-controls button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   border-color: var(--accent-primary);
 }
 
@@ -56,14 +58,14 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .calendar-cell {
   aspect-ratio: 1;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.02);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,16 +75,21 @@
   transition: var(--transition);
 }
 
+/* Workload Levels */
+.calendar-cell.workload-level-1 { background: rgba(124, 58, 237, 0.15); border-color: rgba(124, 58, 237, 0.2); }
+.calendar-cell.workload-level-2 { background: rgba(124, 58, 237, 0.3); border-color: rgba(124, 58, 237, 0.4); }
+.calendar-cell.workload-level-3 { background: rgba(124, 58, 237, 0.5); border-color: rgba(124, 58, 237, 0.7); }
+
 .calendar-cell:hover:not(.empty) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  filter: brightness(1.2);
   transform: translateY(-2px);
 }
 
 .calendar-cell.selected {
-  background: var(--accent-gradient);
+  background: var(--accent-gradient) !important;
   border: none;
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  z-index: 2;
 }
 
 .calendar-cell.selected .day-num {
@@ -95,7 +102,7 @@
 }
 
 .day-num {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -148,7 +155,7 @@
 }
 
 .mini-task-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
   transform: translateX(4px);
 }
 

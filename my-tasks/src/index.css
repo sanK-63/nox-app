@@ -1,10 +1,10 @@
 :root {
-  --bg-main: #0a0a0a;
-  --bg-card: #161616;
+  --bg-main: #f9fafb;
+  --bg-card: #ffffff;
   --accent: #4ade80;
-  --text-main: #ededed;
-  --text-dim: #a1a1a1;
-  --border: #262626;
+  --text-main: #111827;
+  --text-dim: #6b7280;
+  --border: #e5e7eb;
 }
 
 body {
@@ -21,4 +21,4 @@ body {
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-main); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #333; }
+::-webkit-scrollbar-thumb:hover { background: #d1d5db; }

@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
 :root {
-  --bg-deep: #0a0a0a;
-  --bg-card: rgba(255, 255, 255, 0.02);
-  --bg-sidebar: #050505;
+  --bg-deep: #f9fafb;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f3f4f6;
   --accent-primary: #7C3AED;
   --accent-secondary: #4F46E5;
   --accent-gradient: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
-  --text-primary: #ffffff;
-  --text-secondary: #71717a;
-  --border: rgba(255, 255, 255, 0.05);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --border: rgba(0, 0, 0, 0.08);
   --high: #ef4444;
   --medium: #f59e0b;
   --low: #10b981;
@@ -94,13 +94,13 @@ body {
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
   color: var(--text-primary);
 }
 
 .nav-item.active {
   color: var(--accent-primary);
-  background: rgba(124, 58, 237, 0.05);
+  background: rgba(124, 58, 237, 0.08);
 }
 
 .nav-item span {
@@ -130,7 +130,7 @@ body {
 .progress-container {
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 2px;
   margin-top: 8px;
   overflow: hidden;
@@ -161,7 +161,13 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
+
 
 .content-header h1 {
   font-size: clamp(1.1rem, 2.2vh, 1.6rem);
@@ -244,7 +250,7 @@ body {
   border: 1px solid var(--border);
   padding: 12px 20px;
   border-radius: var(--radius);
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
   display: block;
@@ -276,32 +282,151 @@ body {
 
 /* Heatmap Grid */
 .stats-section {
-  padding: 12px 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
 }
 
 .heatmap-header {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-secondary);
   margin-bottom: 8px;
+  padding-left: 4px;
 }
 
 .heatmap-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 4px;
+  padding: 0 4px;
 }
 
 .heat-cell {
+  width: 100%;
   aspect-ratio: 1;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
+  min-width: 8px;
 }
 
 .heat-cell.level-1 { background: rgba(124, 58, 237, 0.3); }
 .heat-cell.level-2 { background: rgba(124, 58, 237, 0.6); }
 .heat-cell.level-3 { background: rgba(124, 58, 237, 1); }
+
+.heatmap-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  padding: 0 4px;
+}
+
+.heatmap-footer .heat-cell {
+  width: 10px;
+  height: 10px;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+/* Stats Box */
+.stats-box {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.stats-row span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Sync Box */
+.sync-box {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-btn, .restore-btn, .sync-btn.auth {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+  border: 1px solid var(--border);
+}
+
+.sync-btn.auth {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+}
+
+.add-btn-main {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+}
+
+.add-btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+  filter: brightness(1.1);
+}
+
+.add-btn-main:active {
+  transform: translateY(0);
+}
+
+.sync-btn {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-primary);
+}
+
+.restore-btn {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.sync-btn:hover, .restore-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.sync-btn:active, .restore-btn:active {
+  transform: scale(0.98);
+}
 
 /* Pomodoro */
 .pomodoro-box {
@@ -339,7 +464,7 @@ body {
 
 .pom-btn.start { background: var(--accent-primary); color: white; }
 .pom-btn.stop { background: #333; color: white; }
-.pom-btn.reset { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border); }
+.pom-btn.reset { background: rgba(0, 0, 0, 0.05); color: var(--text-primary); border: 1px solid var(--border); }
 .pom-btn:hover { filter: brightness(1.2); }
 
 /* Main Content Layout */
@@ -412,7 +537,7 @@ body {
 
 .task-type-badge {
   font-size: 0.65rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
   padding: 2px 8px;
   border-radius: 4px;
   color: var(--text-secondary);
@@ -431,7 +556,7 @@ body {
 .task-card-progress {
   flex: 1;
   height: 3px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -512,14 +637,14 @@ body {
   border: 1px solid var(--border);
   padding: 10px;
   border-radius: 8px;
-  color: white;
+  color: var(--text-primary);
   outline: none;
 }
 
 .subtask-input-row button {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  color: white;
+  color: var(--text-primary);
   width: 40px;
   border-radius: 8px;
   cursor: pointer;
@@ -535,7 +660,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.02);
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -559,13 +684,13 @@ body {
   width: 100%;
   max-width: 450px;
   height: 90vh;
-  background: #080808;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 20px;
   z-index: 1001;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
 .task-drawer.open { right: 0; }
@@ -599,7 +724,7 @@ body {
   transition: var(--transition);
 }
 
-.close-drawer:hover { background: rgba(255,255,255,0.05); color: white; }
+.close-drawer:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
 
 .save-task-btn {
   background: var(--accent-primary);
@@ -620,7 +745,7 @@ body {
   border: none;
   font-size: 1.8rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   margin-bottom: var(--spacing-unit);
   outline: none;
   width: 100%;
@@ -651,7 +776,7 @@ body {
   border: 1px solid var(--border);
   padding: 12px;
   border-radius: 10px;
-  color: white;
+  color: var(--text-primary);
   outline: none;
   font-size: 0.9rem;
   appearance: none; /* Reset select styling */
@@ -659,7 +784,7 @@ body {
 
 .meta-item select:focus, .meta-item input:focus {
   border-color: var(--accent-primary);
-  background: rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.02);
 }
 
 .drawer-section {

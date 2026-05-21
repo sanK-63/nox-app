@@ -11,7 +11,7 @@
 
 .timeline-header {
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.01);
+  background: rgba(0, 0, 0, 0.02);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -62,7 +62,7 @@
 
 .grid-line {
   flex: 1;
-  border-right: 1px solid rgba(255, 255, 255, 0.02);
+  border-right: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .timeline-rows {
@@ -87,7 +87,7 @@
   padding: 0 10px;
   cursor: pointer;
   transition: var(--transition);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,13 +95,13 @@
 }
 
 .timeline-bar:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   z-index: 10;
 }
 
 .bar-title {
   font-size: 11px;
-  color: white;
+  color: var(--text-primary);
 }
 
 /* Priority Colors - Zen style (subtle) */
