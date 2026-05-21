@@ -2,7 +2,7 @@ import React from 'react';
 import Heatmap from './Heatmap';
 import Pomodoro from './Pomodoro';
 
-export default function Sidebar({ activeTab, setActiveTab, tasks, syncContext }) {
+export default function Sidebar({ activeTab, setActiveTab, tasks, tags, activeTags, setActiveTags, deleteTag, syncContext }) {
   const completed = tasks.filter(t => t.is_completed).length;
   const { syncStatus, handleAuth, handleSync, handleRestore } = syncContext;
 
@@ -32,6 +32,31 @@ export default function Sidebar({ activeTab, setActiveTab, tasks, syncContext })
           <div className="progress-bar" style={{ width: `${tasks.length > 0 ? (completed / tasks.length) * 100 : 0}%` }}></div>
         </div>
       </div>
+
+      {tags.length > 0 && (
+        <div className="tags-filter">
+          <div className="tags-filter-header">
+            <span className="tags-filter-label">Теги</span>
+            <button className={`tag-clear-btn ${activeTags.length === 0 ? 'hidden' : ''}`} onClick={() => setActiveTags([])}>сброс</button>
+          </div>
+          <div className="tags-filter-list">
+            {tags.map(tag => (
+              <button
+                key={tag.id}
+                className={`tag-filter-chip ${activeTags.includes(tag.id) ? 'active' : ''}`}
+                style={{
+                  background: activeTags.includes(tag.id) ? tag.color : 'transparent',
+                  borderColor: tag.color,
+                  color: activeTags.includes(tag.id) ? '#fff' : tag.color,
+                }}
+                onClick={() => setActiveTags(prev => prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id])}
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="sync-box">
         {!syncStatus.isAuthenticated ? (

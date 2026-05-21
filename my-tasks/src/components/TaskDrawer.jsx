@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, onSave, onAddSubtask, onToggleSubtask, onDeleteSubtask }) {
+export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, onSave, onAddSubtask, onToggleSubtask, onDeleteSubtask, tags, onAddTag, onAddTaskTag, onRemoveTaskTag }) {
   const [activeTask, setActiveTask] = useState(initialTask);
   const [newSubtask, setNewSubtask] = useState('');
 
@@ -87,6 +87,28 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
             <div className="meta-item">
               <label>Дедлайн</label>
               <input type="datetime-local" value={activeTask?.deadline || ''} onChange={e => setActiveTask({...activeTask, deadline: e.target.value})} />
+            </div>
+          </div>
+
+          <div className="drawer-section">
+            <label>Теги</label>
+            <div className="tags-picker">
+              <div className="task-tags-row" style={{ marginBottom: 8 }}>
+                {activeTask?.tags?.map(tag => (
+                  <span key={tag.id} className="tag-badge removable" style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>
+                    {tag.name}
+                    <button className="tag-remove" onClick={() => onRemoveTaskTag(activeTask.id, tag.id)}>✕</button>
+                  </span>
+                ))}
+              </div>
+              <div className="tags-select-row">
+                <select className="tag-select" defaultValue="" onChange={e => { if (e.target.value) { onAddTaskTag(activeTask.id, parseInt(e.target.value)); e.target.value = ''; } }}>
+                  <option value="" disabled>Добавить тег...</option>
+                  {tags?.filter(tag => !activeTask?.tags?.some(t => t.id === tag.id)).map(tag => (
+                    <option key={tag.id} value={tag.id}>{tag.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

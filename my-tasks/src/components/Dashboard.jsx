@@ -9,13 +9,14 @@ import { useGoogleSync } from '../hooks/useGoogleSync';
 import '../App.css';
 
 export default function Dashboard() {
-  const { tasks, isLoading, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask } = useTasks();
+  const { tasks, tags, isLoading, loadTasks, saveTask, toggleTask, deleteTask, addSubtaskToTask, toggleSubtaskInTask, deleteSubtaskFromTask, addTag, deleteTag, addTaskTag, removeTaskTag } = useTasks();
   const syncContext = useGoogleSync(loadTasks);
   const { folders, isFolderPickerOpen, setIsFolderPickerOpen, selectFolder } = syncContext;
 
   const [activeTab, setActiveTab] = useState('tasks');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('active');
+  const [activeTags, setActiveTags] = useState([]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeTask, setActiveTask] = useState(null);
@@ -29,7 +30,8 @@ export default function Dashboard() {
       start_date: '', 
       deadline: '', 
       task_type: 'quick',
-      subtasks: [] 
+      subtasks: [],
+      tags: [] 
     });
     setIsDrawerOpen(true);
   };
@@ -67,48 +69,52 @@ export default function Dashboard() {
   };
 
   const filteredTasks = useMemo(() => {
-    const getSmartRankedTasks = (tasksList) => {
-      return [...tasksList].sort((a, b) => {
-        const now = new Date();
-        const dayInMs = 24 * 60 * 60 * 1000;
-        
-        const aDeadline = a.deadline ? new Date(a.deadline) : null;
-        const bDeadline = b.deadline ? new Date(b.deadline) : null;
-        
-        const aIsUrgent = aDeadline && (aDeadline - now) < dayInMs;
-        const bIsUrgent = bDeadline && (bDeadline - now) < dayInMs;
-        
-        if (aIsUrgent && !bIsUrgent) return -1;
-        if (!aIsUrgent && bIsUrgent) return 1;
-        
-        const priorityWeight = { high: 3, medium: 2, low: 1 };
-        if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
-          return priorityWeight[b.priority] - priorityWeight[a.priority];
-        }
-        
-        if (a.task_type === 'project' && b.task_type === 'project') {
-          const getProgress = (t) => {
-            if (!t.subtasks || t.subtasks.length === 0) return 0;
-            return t.subtasks.filter(s => s.is_completed).length / t.subtasks.length;
-          };
-          const aProgress = getProgress(a);
-          const bProgress = getProgress(b);
-          if (aProgress > 0.8 && bProgress <= 0.8) return -1;
-          if (aProgress <= 0.8 && bProgress > 0.8) return 1;
-        }
-        
-        return new Date(b.created_at) - new Date(a.created_at);
-      });
-    };
-
-    return getSmartRankedTasks(tasks.filter(t => {
+    const matches = tasks.filter(t => {
       const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
+      const matchesTags = activeTags.length === 0 || activeTags.some(tagId => t.tags?.some(tag => tag.id === tagId));
+      if (!matchesTags) return false;
       if (filter === 'active') return matchesSearch && !t.is_completed;
       if (filter === 'urgent') return matchesSearch && t.priority === 'high' && !t.is_completed;
       if (filter === 'completed') return matchesSearch && t.is_completed;
       return matchesSearch;
-    }));
-  }, [tasks, search, filter]);
+    });
+
+    return [...matches].sort((a, b) => {
+      const now = new Date();
+      const dayInMs = 24 * 60 * 60 * 1000;
+
+      if (filter === 'completed') {
+        return new Date(b.archived_at || 0) - new Date(a.archived_at || 0);
+      }
+      
+      const aDeadline = a.deadline ? new Date(a.deadline) : null;
+      const bDeadline = b.deadline ? new Date(b.deadline) : null;
+      
+      const aIsUrgent = aDeadline && (aDeadline - now) < dayInMs;
+      const bIsUrgent = bDeadline && (bDeadline - now) < dayInMs;
+      
+      if (aIsUrgent && !bIsUrgent) return -1;
+      if (!aIsUrgent && bIsUrgent) return 1;
+      
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
+        return priorityWeight[b.priority] - priorityWeight[a.priority];
+      }
+      
+      if (a.task_type === 'project' && b.task_type === 'project') {
+        const getProgress = (t) => {
+          if (!t.subtasks || t.subtasks.length === 0) return 0;
+          return t.subtasks.filter(s => s.is_completed).length / t.subtasks.length;
+        };
+        const aProgress = getProgress(a);
+        const bProgress = getProgress(b);
+        if (aProgress > 0.8 && bProgress <= 0.8) return -1;
+        if (aProgress <= 0.8 && bProgress > 0.8) return 1;
+      }
+      
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }, [tasks, search, filter, activeTags]);
 
   return (
     <div className="app-layout">
@@ -116,6 +122,10 @@ export default function Dashboard() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         tasks={tasks} 
+        tags={tags}
+        activeTags={activeTags}
+        setActiveTags={setActiveTags}
+        deleteTag={deleteTag}
         syncContext={syncContext} 
       />
 
@@ -152,9 +162,14 @@ export default function Dashboard() {
                       <div className="task-content-main">
                         <div className="task-title-row">
                           <span className={`task-text ${task.is_completed ? 'completed' : ''}`}>{task.title}</span>
-                          {task.task_type === 'project' && (
-                            <span className="task-type-badge">Проект</span>
-                          )}
+                          <div className="task-tags-row">
+                            {task.tags?.map(tag => (
+                              <span key={tag.id} className="tag-badge" style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>{tag.name}</span>
+                            ))}
+                            {task.task_type === 'project' && (
+                              <span className="task-type-badge">Проект</span>
+                            )}
+                          </div>
                         </div>
                         {task.task_type === 'project' && (
                           <div className="project-progress-wrapper">
@@ -202,6 +217,10 @@ export default function Dashboard() {
         onAddSubtask={addSubtaskToTask}
         onToggleSubtask={toggleSubtaskInTask}
         onDeleteSubtask={deleteSubtaskFromTask}
+        tags={tags}
+        onAddTag={addTag}
+        onAddTaskTag={addTaskTag}
+        onRemoveTaskTag={removeTaskTag}
       />
 
       {isFolderPickerOpen && (
