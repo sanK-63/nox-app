@@ -93,6 +93,7 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
     : '';
   const isProject = activeTask?.task_type === 'project';
   const hasSubtasks = (activeTask?.subtasks?.length || 0) > 0;
+  const hasTags = (activeTask?.tags?.length || 0) > 0;
 
   return (
     <div className={`modal-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
@@ -100,70 +101,74 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
         <div className="drawer-inner">
           <header className="drawer-header">
             <button className="close-drawer" onClick={onClose}>✕</button>
-            {isEditing ? (
-              <button className="save-task-btn" onClick={saveTask}>Сохранить</button>
-            ) : (
-              <button className="edit-task-btn" onClick={() => setIsEditing(true)}>Редактировать</button>
-            )}
+            <div className="drawer-header-right">
+              {isEditing ? (
+                <button className="save-task-btn" onClick={saveTask}>Сохранить</button>
+              ) : (
+                <button className="edit-task-btn" onClick={() => setIsEditing(true)}>Редактировать</button>
+              )}
+            </div>
           </header>
 
-          {/* === TITLE & TYPE === */}
-          {isEditing ? (
-            <>
-              <div className="task-type-toggle">
-                <button className={`type-btn ${activeTask?.task_type === 'quick' ? 'active' : ''}`}
-                  onClick={() => setActiveTask({ ...activeTask, task_type: 'quick' })}>Быстрая</button>
-                <button className={`type-btn ${activeTask?.task_type === 'project' ? 'active' : ''}`}
-                  onClick={() => setActiveTask({ ...activeTask, task_type: 'project' })}>Проект</button>
-              </div>
-              <input className="drawer-title-input" placeholder="Название задачи"
-                value={activeTask?.title || ''}
-                onChange={e => setActiveTask({ ...activeTask, title: e.target.value })} />
-            </>
-          ) : (
-            <div className="view-title-block">
-              <div className="view-type-badge">{typeLabel[activeTask?.task_type] || 'Быстрая'}</div>
-              <h2 className="view-title">{activeTask?.title || 'Без названия'}</h2>
+          {/* === TITLE & TYPE — same wrapper === */}
+          <div className="drawer-title-area">
+            <div className="title-type-row">
+              {isEditing ? (
+                <div className="task-type-toggle">
+                  <button className={`type-btn ${activeTask?.task_type === 'quick' ? 'active' : ''}`}
+                    onClick={() => setActiveTask({ ...activeTask, task_type: 'quick' })}>Быстрая</button>
+                  <button className={`type-btn ${activeTask?.task_type === 'project' ? 'active' : ''}`}
+                    onClick={() => setActiveTask({ ...activeTask, task_type: 'project' })}>Проект</button>
+                </div>
+              ) : (
+                <div className="view-type-badge">{typeLabel[activeTask?.task_type] || 'Быстрая'}</div>
+              )}
             </div>
-          )}
+            <div className="title-value-row">
+              {isEditing ? (
+                <input className="drawer-title-input" placeholder="Название задачи"
+                  value={activeTask?.title || ''}
+                  onChange={e => setActiveTask({ ...activeTask, title: e.target.value })} />
+              ) : (
+                <h2 className="view-title">{activeTask?.title || 'Без названия'}</h2>
+              )}
+            </div>
+          </div>
 
-          {/* === META (priority, deadline, tags) === */}
-          {isEditing ? (
-            <div className="drawer-meta">
-              <div className="meta-item">
-                <label>Приоритет</label>
+          {/* === META (priority, deadline) — same grid wrapper === */}
+          <div className="drawer-meta">
+            <div className="meta-item">
+              <label>Приоритет</label>
+              {isEditing ? (
                 <select value={activeTask?.priority || 'low'}
                   onChange={e => setActiveTask({ ...activeTask, priority: e.target.value })}>
                   <option value="low">Низкий</option>
                   <option value="medium">Средний</option>
                   <option value="high">Высокий</option>
                 </select>
-              </div>
-              <div className="meta-item">
-                <label>Дедлайн</label>
-                <input type="datetime-local" value={activeTask?.deadline || ''}
-                  onChange={e => setActiveTask({ ...activeTask, deadline: e.target.value })} />
-              </div>
-            </div>
-          ) : (
-            <div className="drawer-meta view-meta">
-              <div className="meta-item read">
-                <label>Приоритет</label>
-                <span className={`view-priority ${activeTask?.priority}`}>{priorityLabel[activeTask?.priority] || 'Низкий'}</span>
-              </div>
-              {activeTask?.deadline && (
-                <div className="meta-item read">
-                  <label>Дедлайн</label>
-                  <span className="view-deadline">{deadlineStr}</span>
-                </div>
+              ) : (
+                <span className={`meta-value view-priority ${activeTask?.priority}`}>
+                  {priorityLabel[activeTask?.priority] || 'Низкий'}
+                </span>
               )}
             </div>
-          )}
+            <div className="meta-item">
+              <label>Дедлайн</label>
+              {isEditing ? (
+                <input type="datetime-local" value={activeTask?.deadline || ''}
+                  onChange={e => setActiveTask({ ...activeTask, deadline: e.target.value })} />
+              ) : (
+                <span className="meta-value view-deadline">
+                  {activeTask?.deadline ? deadlineStr : 'Не указан'}
+                </span>
+              )}
+            </div>
+          </div>
 
-          {/* === TAGS (only in edit mode; view mode shows in meta block) === */}
-          {isEditing && (
-            <div className="drawer-section">
-              <label>Теги</label>
+          {/* === TAGS — always present === */}
+          <div className="drawer-section">
+            <label>Теги</label>
+            {isEditing ? (
               <div className="tags-picker">
                 <div className="task-tags-row" style={{ marginBottom: 8 }}>
                   {activeTask?.tags?.map(tag => (
@@ -195,24 +200,25 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {!isEditing && activeTask?.tags?.length > 0 && (
-            <div className="drawer-section view-tags-section">
-              <label>Теги</label>
-              <div className="task-tags-row">
-                {activeTask.tags.map(tag => (
-                  <span key={tag.id} className="tag-badge"
-                    style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>{tag.name}</span>
-                ))}
+            ) : (
+              <div className="tags-view">
+                {hasTags ? (
+                  <div className="task-tags-row">
+                    {activeTask.tags.map(tag => (
+                      <span key={tag.id} className="tag-badge"
+                        style={{ background: tag.color + '22', color: tag.color, borderColor: tag.color + '44' }}>{tag.name}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="meta-value tags-empty">Нет тегов</span>
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* === SUBTASKS (same wrapper both modes) === */}
-          {(isProject && hasSubtasks) && (
-            <div className={`drawer-subtasks ${!isEditing ? 'view' : ''}`}>
+          {/* === SUBTASKS — same wrapper, same presence logic === */}
+          {isProject && (
+            <div className="drawer-subtasks">
               <label>Подзадачи</label>
               {isEditing && (
                 <div className="subtask-input-row">
@@ -222,20 +228,24 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
                   <button onClick={handleAddSubtask}>+</button>
                 </div>
               )}
-              <div className="subtask-list">
-                {activeTask.subtasks.map(st => (
-                  <div key={st.id} className="subtask-item">
-                    <input type="checkbox" checked={st.is_completed}
-                      onChange={() => toggleSubtask(st.id, st.is_completed)} />
-                    <span className={st.is_completed ? 'completed' : ''} style={{ flex: 1 }}>{st.title}</span>
-                    {isEditing && <button className="action-btn delete-btn" onClick={() => deleteSubtask(st.id)}>✕</button>}
-                  </div>
-                ))}
-              </div>
+              {hasSubtasks ? (
+                <div className="subtask-list">
+                  {activeTask.subtasks.map(st => (
+                    <div key={st.id} className="subtask-item">
+                      <input type="checkbox" checked={st.is_completed}
+                        onChange={() => toggleSubtask(st.id, st.is_completed)} />
+                      <span className={st.is_completed ? 'completed' : ''} style={{ flex: 1 }}>{st.title}</span>
+                      {isEditing && <button className="action-btn delete-btn" onClick={() => deleteSubtask(st.id)}>✕</button>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <span className="meta-value subtasks-empty">Нет подзадач</span>
+              )}
             </div>
           )}
 
-          {/* === DESCRIPTION (same wrapper both modes) === */}
+          {/* === DESCRIPTION — same wrapper === */}
           <div className="drawer-section drawer-section-grow">
             <label>Описание</label>
             {isEditing ? (
@@ -245,7 +255,7 @@ export default function TaskDrawer({ activeTask: initialTask, isOpen, onClose, o
             ) : activeTask?.description ? (
               <p className="view-description">{activeTask.description}</p>
             ) : (
-              <p className="view-description empty">Нет описания</p>
+              <span className="meta-value desc-empty">Нет описания</span>
             )}
           </div>
 
