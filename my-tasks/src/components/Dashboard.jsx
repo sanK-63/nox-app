@@ -3,6 +3,7 @@ import TaskCalendar from './TaskCalendar';
 import TimelineView from './TimelineView';
 import Sidebar from './Sidebar';
 import TaskDrawer from './TaskDrawer';
+import Toast from './Toast';
 import { useTasks } from '../hooks/useTasks';
 import { useGoogleSync } from '../hooks/useGoogleSync';
 import '../App.css';
@@ -196,6 +197,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      <Toast />
     </div>
   );
 }

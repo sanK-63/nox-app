@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { showToast } from '../components/Toast';
 
 export function useTasks() {
   const [tasks, setTasks] = useState([]);
@@ -13,7 +14,7 @@ export function useTasks() {
         if (saved) setTasks(JSON.parse(saved));
       }
     } catch (e) {
-      console.error('Failed to load tasks:', e);
+      showToast('Ошибка загрузки задач');
     }
   };
 
@@ -34,7 +35,7 @@ export function useTasks() {
         localStorage.setItem('tasks', JSON.stringify(updated));
       }
     } catch (e) {
-      console.error('Failed to save task:', e);
+      showToast('Ошибка сохранения задачи');
     }
   };
 
@@ -49,7 +50,7 @@ export function useTasks() {
         localStorage.setItem('tasks', JSON.stringify(updated));
       }
     } catch (e) {
-      console.error('Failed to toggle task:', e);
+      showToast('Ошибка обновления задачи');
     }
   };
 
@@ -64,7 +65,7 @@ export function useTasks() {
         localStorage.setItem('tasks', JSON.stringify(updated));
       }
     } catch (e) {
-      console.error('Failed to delete task:', e);
+      showToast('Ошибка удаления задачи');
     }
   };
 
@@ -78,7 +79,7 @@ export function useTasks() {
         return updatedTasks.find(t => t.id === taskId);
       }
     } catch (e) {
-      console.error('Failed to add subtask:', e);
+      showToast('Ошибка добавления подзадачи');
     }
     return null;
   };
@@ -92,7 +93,7 @@ export function useTasks() {
         return updatedTasks.find(t => t.id === taskId);
       }
     } catch (e) {
-      console.error('Failed to toggle subtask:', e);
+      showToast('Ошибка обновления подзадачи');
     }
     return null;
   };
@@ -106,7 +107,7 @@ export function useTasks() {
         return updatedTasks.find(t => t.id === taskId);
       }
     } catch (e) {
-      console.error('Failed to delete subtask:', e);
+      showToast('Ошибка удаления подзадачи');
     }
     return null;
   };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { showToast } from '../components/Toast';
 
 export function useGoogleSync(loadTasks) {
   const [syncStatus, setSyncStatus] = useState({ isAuthenticated: false, isSyncing: false, isRestoring: false, lastSync: null, backupFolderId: null });
@@ -16,7 +17,7 @@ export function useGoogleSync(loadTasks) {
         setSyncStatus(prev => ({ ...prev, isAuthenticated: status.isAuthenticated, backupFolderId: status.backupFolderId }));
       }
     } catch (e) {
-      console.error('Failed to check sync status:', e);
+      showToast('Ошибка проверки статуса синхронизации');
     }
   };
 
@@ -30,7 +31,7 @@ export function useGoogleSync(loadTasks) {
         }
       }
     } catch (e) {
-      console.error('Failed to authenticate:', e);
+      showToast('Ошибка авторизации Google');
     }
   };
 
@@ -44,7 +45,7 @@ export function useGoogleSync(loadTasks) {
         }
       }
     } catch (e) {
-      console.error('Failed to load folders:', e);
+      showToast('Ошибка загрузки папок');
     }
   };
 
@@ -58,7 +59,7 @@ export function useGoogleSync(loadTasks) {
         }
       }
     } catch (e) {
-      console.error('Failed to select folder:', e);
+      showToast('Ошибка выбора папки');
     }
   };
 
@@ -70,7 +71,7 @@ export function useGoogleSync(loadTasks) {
         setSyncStatus(prev => ({ ...prev, isSyncing: false, lastSync: result.success ? result.lastSync : prev.lastSync }));
       }
     } catch (e) {
-      console.error('Failed to sync:', e);
+      showToast('Ошибка синхронизации');
       setSyncStatus(prev => ({ ...prev, isSyncing: false }));
     }
   };
@@ -87,7 +88,7 @@ export function useGoogleSync(loadTasks) {
         }
       }
     } catch (e) {
-      console.error('Failed to restore:', e);
+      showToast('Ошибка восстановления из облака');
       setSyncStatus(prev => ({ ...prev, isRestoring: false }));
     }
   };
