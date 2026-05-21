@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import TaskCalendar from './TaskCalendar';
 import TimelineView from './TimelineView';
 import Sidebar from './Sidebar';
@@ -35,6 +35,31 @@ export default function Dashboard() {
   };
 
   const closeDrawer = () => setIsDrawerOpen(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isDrawerOpen) {
+        closeDrawer();
+        return;
+      }
+      if (e.key === 'Escape' && isFolderPickerOpen) {
+        setIsFolderPickerOpen(false);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        openDrawer();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        document.querySelector('.search-bar')?.focus();
+        return;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen, isFolderPickerOpen]);
 
   const handleSaveTask = async (taskData) => {
     await saveTask(taskData);
