@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nox Task Manager - Порядок в делах</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        p { margin: 0; margin-bottom: 12px; }
+        body {
+            background-color: #050505; margin: 0; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw; font-family: 'Urbanist', sans-serif; color: #f5f5f5;
+        }
+
+        .presentation-deck { position: absolute; width: 1280px; height: 720px; }
+
+        @keyframes slideInScale { 0% { opacity: 0; transform: scale(0.95) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { 0% { opacity: 0; transform: translateX(50px); } 100% { opacity: 1; transform: translateX(0); } }
+
+        .slide-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0a0a0a; border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(168, 85, 247, 0.2); padding: 60px;
+            display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden;
+            opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .slide-container.active { opacity: 1; pointer-events: auto; visibility: visible; animation: slideInScale 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .slide-container::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(168, 85, 247, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168, 85, 247, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px; z-index: 0; pointer-events: none;
+        }
+        .slide-container::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); z-index: 0; pointer-events: none;
+        }
+        .slide-container > * { position: relative; z-index: 1; }
+
+        /* Animations */
+        .slide-container.active .subtitle, .slide-container.active .slide-title { opacity: 0; animation: fadeInUp 0.8s forwards 0.1s; }
+        .slide-container.active h1, .slide-container.active .team-list { opacity: 0; animation: fadeInUp 0.8s forwards 0.25s; }
+        .slide-container.active .content-area { opacity: 0; animation: fadeInUp 0.8s forwards 0.4s; }
+        .slide-container.active .image-wrapper { opacity: 0; animation: slideInRight 0.8s forwards 0.5s; }
+        .slide-container.active .tile:nth-child(1) { opacity: 0; animation: fadeInUp 0.6s forwards 0.4s; }
+        .slide-container.active .tile:nth-child(2) { opacity: 0; animation: fadeInUp 0.6s forwards 0.55s; }
+        .slide-container.active .tile:nth-child(3) { opacity: 0; animation: fadeInUp 0.6s forwards 0.7s; }
+        .slide-container.active .tile:nth-child(4) { opacity: 0; animation: fadeInUp 0.6s forwards 0.85s; }
+
+        /* Typography & Layout */
+        h1, h2, h3 { color: #ffffff; font-weight: 700; margin: 0; }
+        .slide-title { font-size: 38px; margin-bottom: 30px; width: 100%; color: #a855f7; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(168, 85, 247, 0.3); padding-bottom: 10px; flex-shrink: 0; }
+        p, li { color: #cbd5e1; font-size: 18px; line-height: 1.4; }
+        .content-area { display: flex; flex-direction: column; flex-grow: 1; justify-content: center; width: 100%; height: 100%; }
+        
+        .title-layout { text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .title-layout h1 { font-size: 72px; margin-bottom: 20px; line-height: 1.1; }
+        .title-layout .subtitle { font-size: 24px; color: #a855f7; letter-spacing: 5px; text-transform: uppercase; font-weight: 500; }
+        .badges { display: flex; gap: 15px; margin-top: 20px; }
+        .badge { background: rgba(168, 85, 247, 0.1); border: 1px solid #a855f7; padding: 5px 15px; border-radius: 20px; color: #a855f7; font-family: 'JetBrains Mono'; font-size: 14px; }
+
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; height: 100%; align-items: center; }
+        .tiled-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; }
+        .tile { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 30px; height: 100%; position: relative; }
+        .tile .icon { color: #a855f7; font-size: 40px; margin-bottom: 20px; }
+        .tile .number-badge { font-family: 'JetBrains Mono'; font-size: 48px; color: rgba(168, 85, 247, 0.2); position: absolute; top: 15px; right: 20px; font-weight: bold; }
+
+        .image-wrapper { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; height: 100%; min-height: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background-color: #111; display: flex; justify-content: center; align-items: center; position: relative; }
+        .image-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+        .team-list { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 30px; }
+        .team-member { background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: bold; color: #fff; }
+
+        .highlight-numbers-layout { display: flex; align-items: center; gap: 60px; justify-content: center; height: 100%; }
+
+        /* Styles for technical slides */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); text-align: left; font-size: 18px; }
+        th { color: #a855f7; font-weight: 700; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+        td:first-child { font-weight: bold; color: #fff; width: 30%; }
+        
+        .code-block { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.4); padding: 25px; border-radius: 12px; border: 1px solid rgba(168, 85, 247, 0.3); color: #cbd5e1; font-size: 16px; overflow-x: auto; line-height: 1.5; white-space: pre; }
+        
+        .feature-list { list-style: none; padding: 0; margin: 0; }
+        .feature-list li { margin-bottom: 10px; position: relative; padding-left: 20px; font-size: 16px; color: #94a3b8; }
+        .feature-list li::before { content: '▹'; position: absolute; left: 0; color: #a855f7; }
+
+        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 100; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .control-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; transition: color 0.3s, transform 0.2s; }
+        .control-btn:hover { color: #a855f7; transform: scale(1.1); }
+        .slide-counter { font-family: 'JetBrains Mono'; color: #888; display: flex; align-items: center; font-size: 16px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="presentation-deck" id="deck">
+    <div class="slide-container active">
+        <div class="title-layout">
+            <p class="subtitle">МИНИМАЛИСТИЧНЫЙ ТАСК-МЕНЕДЖЕР</p>
+            <h1>Nox <br><span style="color: #a855f7;">Порядок в делах.<br>Тишина в мыслях.</span></h1>
+            <p style="max-width: 800px; font-size: 22px; margin-top: 30px; color: #94a3b8;">Помогает фокусироваться на главном — без шума, без лишнего, без компромиссов.</p>
+            <div class="badges">
+                <div class="badge"><i class="fa-brands fa-windows"></i> Windows 10/11</div>
+                <div class="badge"><i class="fa-solid fa-code-branch"></i> v2.0.0</div>
+                <div class="badge"><i class="fa-brands fa-github"></i> Open Source</div>
+            </div>
+            <div style="margin-top: 60px; color: #555; font-size: 14px; font-family: 'JetBrains Mono';">Используйте стрелочки клавиатуры (← →) для навигации</div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Проблема, которую мы все знаем</h2>
+        <div class="content-area">
+            <p style="font-size: 20px; margin-bottom: 40px; max-width: 1000px;">Современные таск-менеджеры превратились в сложные системы с десятками функций, уведомлениями и бесконечными настройками. Вы тратите больше времени на управление задачами, чем на их выполнение.</p>
+            <div class="tiled-content">
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-layer-group"></i></div>
+                    <h3>Слишком много функций</h3>
+                    <p style="margin-top: 15px;">Большинство инструментов перегружены возможностями, которые никогда не используются.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-hurricane"></i></div>
+                    <h3>Хаос вместо фокуса</h3>
+                    <p style="margin-top: 15px;">Отсутствие умных приоритетов заставляет вас самим решать, что действительно важно.</p>
+                </div>
+                <div class="tile">
+                    <div class="icon"><i class="fa-solid fa-lock"></i></div>
+                    <h3>Данные в ловушке</h3>
+                    <p style="margin-top: 15px;">Закрытые форматы и проприетарные облака привязывают вас к одной платформе.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Вдохновение: философия и эстетика</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile">
+                    <div class="number-badge">1</div>
+                    <h3 style="color: #a855f7; margin-bottom: 15px;">Минимализм</h3>
+                    <p>Стремление к функциональной простоте. Мы убрали лишние элементы, оставив только необходимое. Это позволяет фокусироваться на контенте, а не на дизайне.</p>
+                </div>
+                <div class="tile">
+                    <div class="number-badge">2</div>
+                    <h3 style="color: #a855f7; margin-bottom: 15px;">Японская Эстетика</h3>
+                    <p>Влияние дзэн-буддизма и ваби-саби проявляется в стремлении к тихой красоте и естественности. Этот подход придал Nox спокойный, не отвлекающий вид.</p>
+                </div>
+                <div class="tile">
+                    <div class="number-badge">3</div>
+                    <h3 style="color: #a855f7; margin-bottom: 15px;">Zen Interface</h3>
+                    <p>Тёмная тема снижает нагрузку на глаза. Среда свободна от отвлечений — никаких баннеров, уведомлений или ярких цветов, уводящих внимание.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Интеллект: Smart Ranking</h2>
+        <div class="content-area">
+            <div class="two-column">
+                <div>
+                    <p style="font-size: 20px; margin-bottom: 30px;">Nox не просто хранит ваши задачи — он помогает вам понять, что важно прямо сейчас. Встроенная система автоматически поднимает критичные дела наверх списка.</p>
+                    <ul style="padding-left: 20px; font-size: 20px;">
+                        <li style="margin-bottom: 15px;"><strong>Срочные задачи (&lt;24ч):</strong> Автоматически закрепляются наверху.</li>
+                        <li style="margin-bottom: 15px;"><strong>Сортировка по весу:</strong> Высокий приоритет &gt; средний &gt; низкий.</li>
+                        <li><strong>Мотивационный буст:</strong> Проекты, выполненные на &gt;80%, получают приоритет для скорейшего завершения.</li>
+                    </ul>
+                </div>
+                <div class="image-wrapper">
+                    <img src="https://placehold.co/600x400/1a1a1a/a855f7?text=Smart+Ranking+UI" alt="Smart Ranking">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Проекты и подзадачи</h2>
+        <div class="content-area">
+            <p style="font-size: 20px; margin-bottom: 40px; text-align: center;">Крупные цели пугают. Nox позволяет декомпозировать любой проект на управляемые подзадачи и отслеживать прогресс в реальном времени.</p>
+            <div class="tiled-content">
+                <div class="tile" style="text-align: center;">
+                    <div class="icon"><i class="fa-solid fa-bullseye"></i></div>
+                    <h3>01. Создайте проект</h3>
+                    <p style="margin-top: 15px;">Назовите цель и задайте контекст для вашей работы.</p>
+                </div>
+                <div class="tile" style="text-align: center;">
+                    <div class="icon"><i class="fa-solid fa-list-check"></i></div>
+                    <h3>02. Добавьте подзадачи</h3>
+                    <p style="margin-top: 15px;">Разбейте сложную задачу на конкретные, выполнимые шаги.</p>
+                </div>
+                <div class="tile" style="text-align: center;">
+                    <div class="icon"><i class="fa-solid fa-bars-progress"></i></div>
+                    <h3>03. Следите за прогрессом</h3>
+                    <p style="margin-top: 15px;">Визуальный индикатор. Авто-завершение родительской задачи при 100% готовности.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Cloud Sync через Google Drive</h2>
+        <div class="content-area">
+            <div class="two-column">
+                <div class="image-wrapper" style="background: transparent; border: none; box-shadow: none;">
+                    <img src="https://placehold.co/500x500/1a1a1a/a855f7?text=Google+Drive+Sync" alt="Cloud Sync" style="border-radius: 50%; max-width: 400px; max-height: 400px; margin: 0 auto; object-fit: contain;">
+                </div>
+                <div>
+                    <p style="font-size: 20px; margin-bottom: 30px;">Nox использует ваш собственный Google Drive (через googleapis) для синхронизации — без сторонних серверов.</p>
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <i class="fa-brands fa-google" style="font-size: 30px; color: #a855f7;"></i>
+                        <div>
+                            <h3 style="margin:0;">OAuth 2.0 Авторизация</h3>
+                            <p style="margin:0; font-size: 16px;">Безопасный доступ напрямую к вашему аккаунту.</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <i class="fa-solid fa-folder-tree" style="font-size: 30px; color: #a855f7;"></i>
+                        <div>
+                            <h3 style="margin:0;">Управление директорией</h3>
+                            <p style="margin:0; font-size: 16px;">Выбор конкретной папки в Drive для хранения БД.</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; color: #a855f7;"></i>
+                        <div>
+                            <h3 style="margin:0;">Ручной контроль</h3>
+                            <p style="margin:0; font-size: 16px;">Явный процесс бекапа и восстановления данных.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Прозрачность и Доверие</h2>
+        <div class="content-area">
+            <div class="highlight-numbers-layout">
+                <div style="flex: 0 0 40%; text-align: center;">
+                    <i class="fa-brands fa-github" style="font-size: 150px; color: #a855f7; text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);"></i>
+                    <p style="font-size: 24px; color: #a855f7; font-weight: 700; margin-top: 20px;">OPEN SOURCE</p>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 20px;">Nox распространяется под открытой лицензией. Исходный код доступен на GitHub — любой разработчик может изучить архитектуру или создать свою сборку.</p>
+                    <ul style="padding-left: 20px; font-size: 18px; margin-top: 20px;">
+                        <li style="margin-bottom: 10px;"><strong>Полностью прозрачный код:</strong> Никаких скрытых телеметрий и трекеров.</li>
+                        <li style="margin-bottom: 10px;"><strong>Сообщество:</strong> Принимаются pull request'ы и баг-репорты.</li>
+                        <li><strong>Бесплатно навсегда:</strong> Нет платных версий или подписок.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Стек Технологий</h2>
+        <div class="content-area">
+            <div class="two-column">
+                <div>
+                    <table>
+                        <tr><th>Слой / Назначение</th><th>Технология</th></tr>
+                        <tr><td>Язык</td><td>JavaScript (ESM + CJS), JSX</td></tr>
+                        <tr><td>Фронтенд</td><td>React 19, Vite 8, Plain CSS</td></tr>
+                        <tr><td>Десктоп</td><td>Electron 41</td></tr>
+                        <tr><td>База данных</td><td>SQLite (better-sqlite3)</td></tr>
+                        <tr><td>Облако</td><td>Google Drive API (googleapis)</td></tr>
+                        <tr><td>Сборка</td><td>Vite + electron-builder (NSIS/Wix)</td></tr>
+                        <tr><td>Доп. инструменты</td><td>react-calendar 6, ESLint 10</td></tr>
+                    </table>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center; padding-left: 20px;">
+                    <h3 style="color: #a855f7; margin-bottom: 15px; font-size: 28px;">Под капотом</h3>
+                    <p style="font-size: 20px; margin-bottom: 20px;">Итоговый объем проекта составляет <strong>≈3500 строк кода на React</strong> и <strong>≈1500 строк в Main-процессе Electron</strong>.</p>
+                    <p style="font-size: 18px; color: #94a3b8;">Современный симбиоз JS, React и SQLite внутри Electron обеспечивает мгновенный отклик интерфейса и полный локальный контроль над базой данных пользователя без задержек сети.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Архитектура и Взаимодействие</h2>
+        <div class="content-area">
+            <p style="font-size: 20px; margin-bottom: 20px;">Классическое разделение процессов Electron с безопасным мостом (contextBridge). Данные хранятся локально в SQLite.</p>
+            <div class="code-block" style="color: #a855f7; text-align: center; font-size: 20px;">
+Electron Main Process (Node.js)      ←IPC→      Renderer Process (React SPA)
+       │                                                 │
+   database.cjs  (SQLite CRUD)                   Dashboard.jsx
+   sync.cjs      (Google Drive)                  Sidebar, TaskDrawer, Calendar...
+   main.cjs      (Window, IPC, links)            useTasks.js, useGoogleSync.js
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Функционал: Задачи и Визуализация</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-solid fa-list-check" style="margin-right: 10px;"></i> Управление задачами</h3>
+                    <ul class="feature-list">
+                        <li>Полный CRUD-цикл задач</li>
+                        <li>Типы (быстрая / проект) и дедлайны</li>
+                        <li>Приоритеты (low / medium / high)</li>
+                        <li>Глобальный поиск (Ctrl+F)</li>
+                        <li>Фильтры (в работе / важные / архив)</li>
+                    </ul>
+                </div>
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-solid fa-tags" style="margin-right: 10px;"></i> Тегирование</h3>
+                    <ul class="feature-list">
+                        <li>Связь Many-to-many с задачами</li>
+                        <li>Создание собственных цветных тегов</li>
+                        <li>8 встроенных пресетов</li>
+                        <li>Глубокая фильтрация списков по тегам</li>
+                    </ul>
+                </div>
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-solid fa-chart-pie" style="margin-right: 10px;"></i> Визуализация</h3>
+                    <ul class="feature-list">
+                        <li><strong>Календарь:</strong> Сетка с цветовой нагрузкой</li>
+                        <li><strong>Timeline (Гантт):</strong> 30-дневная шкала</li>
+                        <li><strong>Heatmap:</strong> График активности (7×7 нед.)</li>
+                        <li><strong>Прогресс дня:</strong> Верхняя линия статуса</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Функционал: Экосистема и UI</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-regular fa-bell" style="margin-right: 10px;"></i> Уведомления</h3>
+                    <ul class="feature-list">
+                        <li>Нативные OS-уведомления о дедлайнах</li>
+                        <li>Предупреждения за 15 минут до срока</li>
+                        <li>Фоновая проверка каждые 60 секунд</li>
+                        <li>Встроенные Toast-сообщения в UI</li>
+                    </ul>
+                </div>
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-solid fa-stopwatch" style="margin-right: 10px;"></i> Фокус и Продуктивность</h3>
+                    <ul class="feature-list">
+                        <li><strong>Pomodoro:</strong> Встроенный 25-мин таймер</li>
+                        <li>Управление из боковой панели</li>
+                        <li><strong>Горячие клавиши:</strong></li>
+                        <li>Ctrl+N — новая задача</li>
+                        <li>Esc — закрыть окна</li>
+                    </ul>
+                </div>
+                <div class="tile">
+                    <h3 style="font-size: 22px; color:#a855f7; margin-bottom:15px;"><i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 10px;"></i> UI/UX Дизайн</h3>
+                    <ul class="feature-list">
+                        <li>Глубокая тёмная тема оформления</li>
+                        <li>Эффекты glass-morphism (стекло)</li>
+                        <li>Адаптивная боковая панель (Sidebar)</li>
+                        <li>Модальное окно задачи (TaskDrawer)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Структура репозитория и Сборка</h2>
+        <div class="content-area">
+            <div class="two-column">
+                <div class="code-block" style="font-size: 14px; padding: 15px;">
+docs/                         — Лендинг + презентация
+  index.html, prez.html, style.css
+my-tasks/                     — Приложение
+  ├── electron/               — Main process
+  │   ├── main.cjs            — Окно, IPC, deep-links
+  │   ├── preload.js          — contextBridge
+  │   ├── database.cjs        — SQLite CRUD
+  │   └── sync.cjs            — Google Drive API
+  ├── src/                    — React приложение
+  │   ├── components/         — Dashboard, Sidebar,
+  │   │                         TaskDrawer, Heatmap...
+  │   └── hooks/              — useTasks, useGoogleSync
+  ├── tasks.db                — БД SQLite
+  └── package.json            — Конфиги
+                </div>
+                <div>
+                    <h3 style="color:#a855f7; margin-bottom: 20px; font-size: 24px;">Система сборки</h3>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 5px 0; font-family: 'JetBrains Mono'; color: #fff;">npm run dev</h4>
+                        <p style="margin: 0; font-size: 16px;">Vite dev server + горячая перезагрузка Electron (HMR)</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                        <h4 style="margin: 0 0 5px 0; font-family: 'JetBrains Mono'; color: #fff;">npm run dist</h4>
+                        <p style="margin: 0; font-size: 16px;">Production сборка + создание инсталлятора через NSIS</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Наша Команда</h2>
+        <div class="content-area" style="text-align: center;">
+            <p style="font-size: 24px; max-width: 900px; margin: 0 auto;">Проект Nox был разработан командой студентов из <strong>МЕТУ</strong>, группы <strong>ПИ23-1.2р</strong>. Наша усердная работа и приверженность принципам открытого исходного кода стали основой для создания этого инструмента.</p>
+            
+            <div class="team-list">
+                <div class="team-member">Жданов Илья</div>
+                <div class="team-member" style="border-color: #a855f7; color: #a855f7;">Тунев Александр</div>
+                <div class="team-member">Арепьев Никита</div>
+                <div class="team-member">Лавров Андрей</div>
+                <div class="team-member">Курчатов Арсен</div>
+                <div class="team-member">Мурзагалиев Ален</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <h2 class="slide-title">Nox в цифрах и фактах</h2>
+        <div class="content-area">
+            <div class="tiled-content">
+                <div class="tile" style="text-align: center;">
+                    <h3 style="font-size: 40px; color: #a855f7; margin-bottom: 10px;">$0</h3>
+                    <p><strong>Стоимость</strong><br>Полностью бесплатен, без скрытых платежей.</p>
+                </div>
+                <div class="tile" style="text-align: center;">
+                    <h3 style="font-size: 40px; color: #a855f7; margin-bottom: 10px;">∞</h3>
+                    <p><strong>Подзадачи</strong><br>Без ограничений на количество проектов.</p>
+                </div>
+                <div class="tile" style="text-align: center;">
+                    <h3 style="font-size: 40px; color: #a855f7; margin-bottom: 10px;"><i class="fa-solid fa-code"></i></h3>
+                    <p><strong>Для кого?</strong><br>Разработчики, студенты и все, кто ищет фокус.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-container">
+        <div class="content-area">
+            <div class="title-layout" style="text-align: center;">
+                <h2 style="font-size: 80px; color: #a855f7; margin-bottom: 20px;">Готовы обрести фокус?</h2>
+                <p style="font-size: 24px; max-width: 800px;">Nox — это не просто инструмент. Это способ работать иначе: спокойнее, осознаннее, продуктивнее.</p>
+                
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 40px;">
+                    <a href="https://sank-63.github.io/nox-app/" style="background: #a855f7; color: #fff; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; text-decoration: none; display: inline-block;">
+                        <i class="fa-solid fa-download"></i> Скачать Nox v2.0.0
+                    </a>
+                    <a href="https://github.com/sanK-63/nox-app" style="background: rgba(255,255,255,0.1); color: #fff; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 18px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; text-decoration: none; display: inline-block;">
+                        <i class="fa-brands fa-github"></i> Исходный код
+                    </a>
+                </div>
+                <p style="margin-top: 40px; font-size: 16px; color: #666;">Проект, созданный сообществом для сообщества.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="control-btn" id="prevBtn"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="slide-counter"><span id="currentNum">1</span>&nbsp;/&nbsp;<span id="totalNum">15</span></div>
+    <button class="control-btn" id="nextBtn"><i class="fa-solid fa-chevron-right"></i></button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const slides = document.querySelectorAll('.slide-container');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentNumEl = document.getElementById('currentNum');
+        const totalNumEl = document.getElementById('totalNum');
+        
+        let currentSlide = 0;
+        totalNumEl.textContent = slides.length;
+
+        function updateDeck() {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide].classList.add('active');
+            currentNumEl.textContent = currentSlide + 1;
+        }
+
+        function nextSlide() { if (currentSlide < slides.length - 1) { currentSlide++; updateDeck(); } }
+        function prevSlide() { if (currentSlide > 0) { currentSlide--; updateDeck(); } }
+
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'Enter') nextSlide();
+            else if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        const deck = document.getElementById('deck');
+        function resizeDeck() {
+            const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720) * 0.95;
+            deck.style.transform = `scale(${scale})`;
+            deck.style.transformOrigin = 'center center';
+        }
+        window.addEventListener('resize', resizeDeck);
+        resizeDeck();
+    });
+</script>
+
+</body>
+</html>
