@@ -319,11 +319,99 @@ body {
   padding: 0 4px;
 }
 
+.heatmap-footer .heat-cell-v2,
 .heatmap-footer .heat-cell {
   width: 10px;
   height: 10px;
   aspect-ratio: 1;
   flex-shrink: 0;
+  border-radius: 2px;
+}
+
+/* Heatmap v2 — GitHub-style contribution graph */
+.heatmap-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.heatmap-month-row {
+  display: grid;
+  grid-template-columns: 22px repeat(7, 12px);
+  gap: 2px;
+}
+
+.heatmap-month-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+  text-align: left;
+  padding-left: 0;
+  line-height: 1;
+}
+
+.heatmap-week-row {
+  display: grid;
+  grid-template-columns: 22px repeat(7, 12px);
+  gap: 2px;
+  align-items: center;
+}
+
+.heatmap-day-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: right;
+  padding-right: 4px;
+  line-height: 12px;
+}
+
+.heat-cell-v2 {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #eaeaea;
+  cursor: pointer;
+  transition: outline 0.1s ease;
+  outline: 1px solid transparent;
+}
+
+.heat-cell-v2:hover {
+  outline: 1px solid rgba(0, 0, 0, 0.25);
+  outline-offset: 0;
+}
+
+.heat-cell-v2.level-1 { background: #d8b4fe; }
+.heat-cell-v2.level-2 { background: #c084fc; }
+.heat-cell-v2.level-3 { background: #a855f7; }
+.heat-cell-v2.level-4 { background: #7c3aed; }
+
+/* Tooltip */
+.tooltip-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tooltip-box {
+  position: fixed;
+  z-index: 9999;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.7rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  line-height: 1.4;
+}
+
+.tooltip-top {
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
 }
 
 /* Stats Box */

@@ -1,13 +1,24 @@
 import React, { useMemo } from 'react';
+import Tooltip from './Tooltip';
 import './TimelineStyles.css';
 
+const PRIORITY_COLORS = {
+  high:   { bg: 'rgba(239, 68, 68, 0.2)',  border: 'rgba(239, 68, 68, 0.45)' },
+  medium: { bg: 'rgba(245, 158, 11, 0.2)', border: 'rgba(245, 158, 11, 0.45)' },
+  low:    { bg: 'rgba(124, 58, 237, 0.2)', border: 'rgba(124, 58, 237, 0.45)' },
+};
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+}
+
 const TimelineView = ({ tasks, onTaskClick }) => {
-  // Generate a range of days for the timeline (e.g., current month)
   const timelineDays = useMemo(() => {
     const days = [];
     const start = new Date();
-    start.setDate(1); // Start of month
-    
+    start.setDate(1);
     for (let i = 0; i < 30; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
@@ -18,19 +29,17 @@ const TimelineView = ({ tasks, onTaskClick }) => {
 
   const getTaskStyle = (task) => {
     if (!task.start_date || !task.deadline) {
-      // Fallback: show as a single day if dates are missing
       const date = new Date(task.deadline || task.created_at);
       const dayIndex = timelineDays.findIndex(d => d.toDateString() === date.toDateString());
       if (dayIndex === -1) return { display: 'none' };
       return {
         left: `${(dayIndex / timelineDays.length) * 100}%`,
-        width: `${(1 / timelineDays.length) * 100}%`
+        width: `${(1 / timelineDays.length) * 100}%`,
       };
     }
 
     const start = new Date(task.start_date);
     const end = new Date(task.deadline);
-    
     const startIndex = timelineDays.findIndex(d => d.toDateString() === start.toDateString());
     const endIndex = timelineDays.findIndex(d => d.toDateString() === end.toDateString());
 
@@ -42,7 +51,7 @@ const TimelineView = ({ tasks, onTaskClick }) => {
 
     return {
       left: `${(left / timelineDays.length) * 100}%`,
-      width: `${(duration / timelineDays.length) * 100}%`
+      width: `${(duration / timelineDays.length) * 100}%`,
     };
   };
 
@@ -63,19 +72,39 @@ const TimelineView = ({ tasks, onTaskClick }) => {
         <div className="timeline-grid-lines">
           {timelineDays.map((_, i) => <div key={i} className="grid-line" />)}
         </div>
-        
+
         <div className="timeline-rows">
-          {tasks.map((task) => (
-            <div key={task.id} className="timeline-row">
-              <div 
-                className={`timeline-bar priority-${task.priority} ${task.is_completed ? 'completed' : ''}`}
-                style={getTaskStyle(task)}
-                onClick={() => onTaskClick(task)}
-              >
-                <span className="bar-title">{task.title}</span>
+          {tasks.map((task) => {
+            const pc = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low;
+            return (
+              <div key={task.id} className="timeline-row">
+                <Tooltip
+                  content={
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{task.title}</div>
+                      <div style={{ opacity: 0.7, fontSize: '0.65rem' }}>
+                        {formatDate(task.start_date)} — {formatDate(task.deadline)}
+                      </div>
+                    </div>
+                  }
+                  position="top"
+                >
+                  <div
+                    className={`timeline-bar priority-${task.priority} ${task.is_completed ? 'completed' : ''}`}
+                    style={{
+                      ...getTaskStyle(task),
+                      background: pc.bg,
+                      borderColor: pc.border,
+                      color: '#1A1A1A',
+                    }}
+                    onClick={() => onTaskClick(task)}
+                  >
+                    <span className="bar-title">{task.title}</span>
+                  </div>
+                </Tooltip>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

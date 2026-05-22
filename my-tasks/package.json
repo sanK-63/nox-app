@@ -1,6 +1,8 @@
 {
   "name": "my-tasks",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Nox Task Manager — кроссплатформенный таск-менеджер с таймлайном, календарём и Google Sync",
+  "author": "sanK-63",
   "main": "electron/main.cjs",
   "private": true,
   "type": "module",
@@ -16,8 +18,10 @@
     "appId": "com.nox.app",
     "productName": "Nox Task Manager",
     "directories": {
-      "output": "release"
+      "output": "C:\\nox-release"
     },
+    "npmRebuild": false,
+    "compression": "store",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -45,6 +49,7 @@
     }
   },
   "dependencies": {
+    "app-builder-bin": "^4.2.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
     "googleapis": "^171.4.0",
@@ -58,6 +63,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "asar": "^3.2.0",
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
     "esbuild": "^0.28.0",
