@@ -19,3 +19,6 @@ release/
 # OS
 Thumbs.db
 .DS_Store
+
+# Obsidian Vault
+Obsidian Vault/
