@@ -20,6 +20,12 @@ export default function Sidebar({ activeTab, setActiveTab, tasks, tags, activeTa
         <div className={`nav-item ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>
           <span className="nav-item-text">Таймлайн</span>
         </div>
+        <div className={`nav-item ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>
+          <span className="nav-item-text">Заметки</span>
+        </div>
+        <div className={`nav-item ${activeTab === 'graph' ? 'active' : ''}`} onClick={() => setActiveTab('graph')}>
+          <span className="nav-item-text">Граф</span>
+        </div>
       </nav>
 
       <Pomodoro />

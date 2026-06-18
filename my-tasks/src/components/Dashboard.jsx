@@ -3,6 +3,8 @@ import TaskCalendar from './TaskCalendar';
 import TimelineView from './TimelineView';
 import Sidebar from './Sidebar';
 import TaskDrawer from './TaskDrawer';
+import NotesPanel from './NotesPanel';
+import GraphView from './GraphView';
 import Toast from './Toast';
 import { useTasks } from '../hooks/useTasks';
 import { useGoogleSync } from '../hooks/useGoogleSync';
@@ -130,14 +132,20 @@ export default function Dashboard() {
       />
 
       <main className="main-content">
-        <div className="day-progress-line" style={{ width: `${(new Date().getHours() * 60 + new Date().getMinutes()) / 1440 * 100}%` }}></div>
-        <header className="content-header">
-          <h1>{activeTab === 'tasks' ? 'Мои задачи' : activeTab === 'calendar' ? 'Календарь' : 'Таймлайн'}</h1>
-          <button className="add-btn-main" onClick={() => openDrawer()}>+ Создать</button>
-        </header>
+        {activeTab !== 'notes' && (
+          <>
+          <div className="day-progress-line" style={{ width: `${(new Date().getHours() * 60 + new Date().getMinutes()) / 1440 * 100}%` }}></div>
+          <header className="content-header">
+            <h1>{activeTab === 'tasks' ? 'Мои задачи' : activeTab === 'calendar' ? 'Календарь' : activeTab === 'timeline' ? 'Таймлайн' : ''}</h1>
+            {activeTab !== 'graph' && <button className="add-btn-main" onClick={() => openDrawer()}>+ Создать</button>}
+          </header>
+          </>
+        )}
 
         <div className="scroll-area">
-          {activeTab === 'tasks' ? (
+          {activeTab === 'notes' ? (
+            <NotesPanel tasks={tasks} />
+          ) : activeTab === 'tasks' ? (
             <>
               <input className="search-bar" placeholder="Поиск задач..." value={search} onChange={e => setSearch(e.target.value)} />
               
@@ -157,7 +165,7 @@ export default function Dashboard() {
                   const isUrgent = task.deadline && (new Date(task.deadline) - new Date()) < (24 * 60 * 60 * 1000);
 
                   return (
-                    <div key={task.id} className={`task-item-compact ${isUrgent ? 'urgent-border' : ''}`} onClick={() => openDrawer(task)}>
+                    <div key={task.id} className={`task-item-compact ${isUrgent ? 'urgent-border' : ''}`} draggable="true" onDragStart={(e) => { e.dataTransfer.setData('task/id', String(task.id)); e.dataTransfer.effectAllowed = 'link'; }} onClick={() => openDrawer(task)}>
                       <div className={`priority-line ${task.priority}`} onClick={(e) => { e.stopPropagation(); toggleTask(task.id, task.is_completed); }}></div>
                       <div className="task-content-main">
                         <div className="task-title-row">
@@ -200,6 +208,10 @@ export default function Dashboard() {
           ) : activeTab === 'calendar' ? (
             <div className="calendar-wrapper">
               <TaskCalendar tasks={tasks} onTaskClick={openDrawer} />
+            </div>
+          ) : activeTab === 'graph' ? (
+            <div className="graph-wrapper">
+              <GraphView onNavigateToNote={(id) => { setActiveTab('notes'); }} />
             </div>
           ) : (
             <div className="timeline-wrapper">
