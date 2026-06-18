@@ -171,6 +171,26 @@ export default function NotesPanel({ tasks }) {
     }
   };
 
+  const handleMoveToFolder = async (noteId) => {
+    try {
+      if (window.api?.folders?.list) {
+        const folders = await window.api.folders.list();
+        const choice = prompt('ID папки для перемещения (0 — убрать из папки):\n' +
+          folders.map(f => `${f.id}: ${f.name}`).join('\n'));
+        if (choice === null) return;
+        const folderId = parseInt(choice);
+        if (isNaN(folderId) || folderId === 0) {
+          await window.api.folders.moveNote(noteId, null);
+        } else {
+          await window.api.folders.moveNote(noteId, folderId);
+        }
+        await loadNotes();
+      }
+    } catch (e) {
+      showToast('Ошибка перемещения');
+    }
+  };
+
   const handleContextMenu = (e, note) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, note });
@@ -309,6 +329,9 @@ export default function NotesPanel({ tasks }) {
           </div>
           <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleDuplicate(contextMenu.note.id); setContextMenu(null); }}>
             📋 Дублировать
+          </div>
+          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleMoveToFolder(contextMenu.note.id); setContextMenu(null); }}>
+            📂 Переместить в папку...
           </div>
           <div className="note-context-item danger" onClick={(e) => { e.stopPropagation(); handleDelete(contextMenu.note.id); setContextMenu(null); }}>
             🗑 Удалить
@@ -477,9 +500,9 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
             if (partial.length > 0) {
               e.preventDefault();
               insertWikiLink(partial);
-              if (window.api?.addNote) {
+              if (window.api?.addNote && onCreateNote) {
                 window.api.addNote({ title: partial, content: '' })
-                  .then(r => { if (r?.id) showToast(`Создана заметка «${partial}»`); })
+                  .then(r => { if (r?.id) onCreateNote(r.id); })
                   .catch(() => showToast('Ошибка создания заметки'));
               }
             }
@@ -501,7 +524,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
   const handleSaveImmediate = () => saveCurrent(true);
 
   const handleWikiLink = async (linkTitle) => {
-    const found = notes.find(n => n.title === linkTitle);
+    const found = notes.find(n => n.title.toLowerCase() === linkTitle.toLowerCase());
     if (found && onNavigateToNote) {
       onNavigateToNote(found.id);
     } else if (window.api?.addNote && onCreateNote) {
@@ -521,6 +544,25 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
     setContent(newContent);
     contentRef.current = newContent;
     saveCurrent(false);
+  };
+
+  const handleTextareaClick = (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const val = contentRef.current;
+    if (!val) return;
+    const before = val.slice(0, pos);
+    const openIdx = before.lastIndexOf('[[');
+    if (openIdx === -1) return;
+    const after = val.slice(openIdx + 2);
+    const closeIdx = after.indexOf(']]');
+    if (closeIdx === -1 || openIdx + 2 + closeIdx < pos) return;
+    const title = after.slice(0, closeIdx).split('|')[0].trim();
+    if (!title) return;
+    e.preventDefault();
+    handleWikiLink(title);
   };
 
   const unlinkedTasks = useMemo(() => {
@@ -613,6 +655,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
               value={content}
               onChange={handleContentChange}
               onKeyDown={handleWikiKeyDown}
+              onMouseUp={handleTextareaClick}
               placeholder="Начните писать... Поддерживается Markdown и [[ссылки]] на другие заметки"
             />
             {wikiSuggestions.length > 0 && (

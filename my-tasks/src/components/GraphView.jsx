@@ -360,7 +360,7 @@ export default function GraphView({ onNavigateToNote }) {
             <polygon points="0 0, 7 2.5, 0 5" fill="var(--border)" />
           </marker>
           <filter id="node-shadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.18)" />
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.18)" />
           </filter>
         </defs>
         <g transform={viewTransform}>

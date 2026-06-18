@@ -2075,6 +2075,106 @@ body {
   height: 1px;
 }
 
+/* Folder Panel */
+.folder-panel {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  flex-shrink: 0;
+}
+.folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  margin-bottom: 4px;
+}
+.folder-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+.folder-add-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.folder-add-btn:hover {
+  background: rgba(124,58,237,0.08);
+  color: var(--accent-primary);
+}
+.folder-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.folder-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  border-radius: 0;
+  transition: var(--transition);
+  user-select: none;
+}
+.folder-item:hover {
+  background: rgba(0,0,0,0.03);
+  color: var(--text-primary);
+}
+.folder-item.active {
+  background: rgba(124,58,237,0.08);
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+.folder-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-count {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  margin-left: auto;
+  padding-left: 8px;
+}
+.folder-creating {
+  padding: 2px 12px;
+}
+.folder-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  padding: 2px 0;
+}
+.folder-empty {
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
 /* Graph View */
 .graph-wrapper {
   height: 100%;
