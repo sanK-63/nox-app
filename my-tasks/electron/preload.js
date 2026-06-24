@@ -6,6 +6,12 @@ ipcRenderer.on('notes:log', (_event, msg) => {
 });
 
 contextBridge.exposeInMainWorld('api', {
+  // ===== Task sync events =====
+  onTaskToggled: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('tasks:toggled', handler);
+    return () => ipcRenderer.removeListener('tasks:toggled', handler);
+  },
   // ===== Legacy (обратная совместимость) =====
   getTasks: () => ipcRenderer.invoke('get-tasks'),
   addTask: (task) => ipcRenderer.invoke('add-task', task),

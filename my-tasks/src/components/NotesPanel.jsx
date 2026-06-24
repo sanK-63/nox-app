@@ -22,7 +22,6 @@ export default function NotesPanel({ tasks }) {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => loadNumber(SIDEBAR_WIDTH_KEY, 280));
-  const [contextMenu, setContextMenu] = useState(null);
   const [filteredFolder, setFilteredFolder] = useState(null);
   const resizing = useRef(false);
 
@@ -92,25 +91,7 @@ export default function NotesPanel({ tasks }) {
     return list.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
   }, [notes, search, filteredFolder]);
 
-  // Virtual scroll
-  const [visibleCount, setVisibleCount] = useState(30);
-  const sentinelRef = useRef(null);
 
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setVisibleCount(prev => Math.min(prev + 20, filteredNotes.length));
-      }
-    }, { rootMargin: '200px' });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [filteredNotes.length]);
-
-  useEffect(() => {
-    setVisibleCount(30);
-  }, [search]);
 
   const handleCreate = async () => {
     try {
@@ -171,22 +152,6 @@ export default function NotesPanel({ tasks }) {
     }
   };
 
-  const handleContextMenu = (e, note) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, note });
-  };
-
-  useEffect(() => {
-    const close = () => setContextMenu(null);
-    const click = () => setContextMenu(null);
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('click', click);
-    return () => {
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('click', click);
-    };
-  }, []);
-
   // Resizable sidebar
   const handleResizeStart = useCallback((e) => {
     e.preventDefault();
@@ -220,40 +185,21 @@ export default function NotesPanel({ tasks }) {
   return (
     <div className="notes-layout">
       <div className="notes-sidebar" style={{ width: sidebarWidth, minWidth: 180, maxWidth: 500 }}>
-        <FolderPanel
-          selectedFolderId={filteredFolder}
-          onSelectFolder={setFilteredFolder}
-          allNotesCount={notes.length}
-        />
         <div className="notes-sidebar-header">
           <span className="notes-count">{filteredNotes.length} заметок</span>
           <button className="add-note-btn" onClick={handleCreate}>+</button>
         </div>
         <input className="notes-search" placeholder="Поиск заметок..." value={search} onChange={e => setSearch(e.target.value)} />
-        <div className="notes-list">
-          {filteredNotes.slice(0, visibleCount).map(note => (
-            <div
-              key={note.id}
-              className={`note-list-item ${activeNoteId === note.id ? 'active' : ''}`}
-              onClick={() => handleSelectNote(note.id)}
-              onContextMenu={(e) => handleContextMenu(e, note)}
-            >
-              <div className="note-list-color" style={{ background: note.color }}></div>
-              <div className="note-list-info">
-                <span className="note-list-title">{note.title}</span>
-                <span className="note-list-date">
-                  {new Date(note.updated_at || note.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                </span>
-              </div>
-              <div className="note-list-actions">
-                <button className={`note-pin-btn ${note.is_pinned ? 'pinned' : ''}`} onClick={(e) => handleTogglePin(note.id, note.is_pinned, e)} title={note.is_pinned ? 'Открепить' : 'Закрепить'}>📌</button>
-                <button className="note-del-btn" onClick={(e) => handleDelete(note.id, e)}>✕</button>
-              </div>
-            </div>
-          ))}
-          {filteredNotes.length === 0 && <div className="notes-empty">Нет заметок</div>}
-          {visibleCount < filteredNotes.length && <div ref={sentinelRef} className="notes-list-sentinel" />}
-        </div>
+        <FolderPanel
+          notes={notes}
+          activeNoteId={activeNoteId}
+          onSelectNote={handleSelectNote}
+          allNotesCount={notes.length}
+          search={search}
+          filteredFolder={filteredFolder}
+          onSelectFolder={setFilteredFolder}
+          onNoteChanged={loadNotes}
+        />
       </div>
 
       <div className="notes-resize-handle" onMouseDown={handleResizeStart} />
@@ -301,20 +247,6 @@ export default function NotesPanel({ tasks }) {
         )}
       </div>
 
-      {contextMenu && (
-        <div className="note-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 9999 }}
-          onClick={() => setContextMenu(null)}>
-          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleTogglePin(contextMenu.note.id, contextMenu.note.is_pinned); setContextMenu(null); }}>
-            {contextMenu.note.is_pinned ? '📌 Открепить' : '📌 Закрепить'}
-          </div>
-          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleDuplicate(contextMenu.note.id); setContextMenu(null); }}>
-            📋 Дублировать
-          </div>
-          <div className="note-context-item danger" onClick={(e) => { e.stopPropagation(); handleDelete(contextMenu.note.id); setContextMenu(null); }}>
-            🗑 Удалить
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -357,6 +289,21 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
     if (window.api?.getNoteTasks) {
       window.api.getNoteTasks(note.id).then(setLinkedTasks).catch(() => {});
     }
+    // Подписка на внешние изменения задач (из Dashboard)
+    const unsub = window.api?.onTaskToggled?.((data) => {
+      if (data.noteId === note.id) {
+        // Перезагрузить связанные задачи
+        window.api.getNoteTasks(note.id).then(setLinkedTasks).catch(() => {});
+        // Перезагрузить контент заметки, если он изменился из-за reverse sync
+        window.api.getNote(note.id).then(updated => {
+          if (updated && updated.content !== contentRef.current) {
+            setContent(updated.content);
+            contentRef.current = updated.content;
+          }
+        }).catch(() => {});
+      }
+    });
+    return () => { if (unsub) unsub(); };
   }, [note.id]);
 
   const lastSavedRef = useRef({ title: note.title, content: note.content, color: note.color });
@@ -520,7 +467,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
   const handleToggleCheckbox = (newContent) => {
     setContent(newContent);
     contentRef.current = newContent;
-    saveCurrent(false);
+    saveCurrent(true); // мгновенный save, без debounce
   };
 
   const unlinkedTasks = useMemo(() => {
@@ -603,7 +550,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
       <div className="note-editor-body" style={{ position: 'relative' }}>
         {isPreview ? (
           <div className="note-preview">
-            <MarkdownRenderer content={content} onWikiLink={handleWikiLink} onToggleCheckbox={handleToggleCheckbox} />
+            <MarkdownRenderer content={content} onWikiLink={handleWikiLink} onToggleCheckbox={handleToggleCheckbox} linkedTasks={linkedTasks} />
           </div>
         ) : (
           <>
@@ -677,13 +624,30 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
               )}
               {linkedTasks.length > 0 ? (
                 <div className="note-linked-tasks">
-                  {linkedTasks.map(t => (
-                    <div key={t.id} className="note-linked-task">
-                      <span className={`note-linked-task-status ${t.is_completed ? 'done' : ''}`}>{t.is_completed ? '✓' : '○'}</span>
-                      <span>{t.title}</span>
-                      <button className="note-unlink-btn" onClick={() => handleUnlinkTask(t.id)}>✕</button>
-                    </div>
-                  ))}
+                  {linkedTasks.map(t => {
+                    const fromCheckbox = t.note_id === note.id;
+                    return (
+                      <div key={t.id} className="note-linked-task" draggable="true" onDragStart={(e) => handleDragStart(e, t.id)}>
+                        <span className="note-linked-task-icon" title={fromCheckbox ? 'Из чекбокса' : 'Связана вручную'}>
+                          {fromCheckbox ? '☐' : '🔗'}
+                        </span>
+                        <span className={`note-linked-task-status ${t.is_completed ? 'done' : ''}`}
+                          onClick={async () => {
+                            if (window.api?.toggleTask) {
+                              await window.api.toggleTask({ id: t.id, is_completed: !t.is_completed });
+                              const updated = await window.api.getNoteTasks(note.id);
+                              setLinkedTasks(updated || []);
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {t.is_completed ? '✓' : '○'}
+                        </span>
+                        <span style={{ textDecoration: t.is_completed ? 'line-through' : 'none', opacity: t.is_completed ? 0.5 : 1 }}>{t.title}</span>
+                        <button className="note-unlink-btn" onClick={() => handleUnlinkTask(t.id)}>✕</button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="note-section-empty">Нет связанных задач</div>

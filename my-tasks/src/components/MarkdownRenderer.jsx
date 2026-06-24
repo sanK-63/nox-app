@@ -209,7 +209,7 @@ function processCodeBlock(lines, startIdx) {
   };
 }
 
-export default function MarkdownRenderer({ content, onWikiLink, onToggleCheckbox, className = '' }) {
+export default function MarkdownRenderer({ content, onWikiLink, onToggleCheckbox, className = '', linkedTasks }) {
   if (!content) return null;
   const lines = content.split('\n');
   const nodes = [];
@@ -251,12 +251,13 @@ export default function MarkdownRenderer({ content, onWikiLink, onToggleCheckbox
       const checked = taskMatch[2] === 'x';
       const label = taskMatch[3];
       const lineIndex = i;
+      const linkedTask = linkedTasks?.find(t => t.title === label);
       nodes.push(
         <div key={i} className="md-task-line">
           <input
             type="checkbox"
             checked={checked}
-            onChange={() => {
+            onChange={async () => {
               if (!onToggleCheckbox) return;
               const newLines = [...lines];
               const current = newLines[lineIndex];
@@ -265,6 +266,12 @@ export default function MarkdownRenderer({ content, onWikiLink, onToggleCheckbox
                 : current.replace(/^(- \[ )(\] .*)/, '$1x$2');
               newLines[lineIndex] = toggled;
               onToggleCheckbox(newLines.join('\n'));
+              // Мгновенная синхронизация с задачей в БД
+              if (linkedTask?.id && window.api?.toggleTask) {
+                try {
+                  await window.api.toggleTask({ id: linkedTask.id, is_completed: !checked });
+                } catch {}
+              }
             }}
           />
           <span>{parseInline(label, onWikiLink)}</span>

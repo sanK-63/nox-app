@@ -322,6 +322,26 @@ function setupDatabaseHandlers(ipcMain, app) {
     if (status === 1) {
       db.prepare('UPDATE subtasks SET is_completed = 1 WHERE task_id = ?').run(id);
     }
+    let toggledNoteId = null;
+    // Обратная синхронизация: если задача из заметки, обновляем чекбокс в контенте
+    const task = db.prepare('SELECT note_id, title FROM tasks WHERE id = ?').get(id);
+    if (task && task.note_id) {
+      toggledNoteId = task.note_id;
+      const note = db.prepare('SELECT content FROM notes WHERE id = ?').get(task.note_id);
+      if (note) {
+        const escaped = task.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const checkboxRegex = new RegExp(`^(- \\[)[ x](\\] ${escaped}\\s*)$`, 'gm');
+        const newContent = note.content.replace(checkboxRegex, `$1${is_completed ? 'x' : ' '}$2`);
+        if (newContent !== note.content) {
+          db.prepare('UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(newContent, task.note_id);
+          parseNoteContent(db, task.note_id, newContent);
+        }
+      }
+    }
+    // Оповещаем все окна о change (для live-обновления открытой заметки)
+    try {
+      event.sender.send('tasks:toggled', { taskId: id, noteId: toggledNoteId });
+    } catch {}
   });
   
   ipcMain.handle('delete-task', (event, id) => {

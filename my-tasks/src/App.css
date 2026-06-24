@@ -2252,6 +2252,189 @@ body {
   opacity: 0.6;
 }
 
+/* ===== Folder Tree View (Notes sidebar) ===== */
+.folder-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+  min-height: 0;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+}
+
+.folder-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.folder-add-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  line-height: 1;
+}
+.folder-add-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--accent-primary);
+}
+
+.folder-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tree-folder {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+.tree-folder:hover {
+  background: rgba(0,0,0,0.03);
+}
+.tree-folder.active {
+  background: rgba(124, 58, 237, 0.08);
+  color: var(--accent-primary);
+}
+
+.tree-folder-chevron {
+  font-size: 0.5rem;
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  transition: var(--transition);
+}
+.tree-folder-chevron.invisible {
+  visibility: hidden;
+}
+
+.tree-folder-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.tree-folder-name {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.tree-folder-rename {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 4px;
+  outline: none;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.tree-folder-count {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  font-weight: 500;
+  min-width: 18px;
+  text-align: right;
+}
+
+.tree-folder-empty {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  padding: 4px 10px;
+  font-style: italic;
+}
+
+.tree-section-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  padding: 8px 10px 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.tree-note-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-left: 8px;
+}
+.tree-note-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+.tree-note-item.active {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.tree-note-color {
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tree-note-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tree-note-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.tree-note-date {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
 /* Responsive: narrow notes sidebar on small screens */
 @media (max-width: 900px) {
   .notes-layout {

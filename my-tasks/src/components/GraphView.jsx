@@ -35,6 +35,17 @@ export default function GraphView({ onNavigateToNote }) {
   const panStartRef = useRef({ x: 0, y: 0 });
   const panStartPosRef = useRef({ x: 0, y: 0 });
   const startSimRef = useRef(null);
+  const selectedRef = useRef(null);
+  const nodeElRef = useRef({});
+  const edgeElRef = useRef({});
+  const wasDraggedRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useLayoutEffect(() => { selectedRef.current = selected; }, [selected]);
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -43,6 +54,19 @@ export default function GraphView({ onNavigateToNote }) {
     (window.api?.notes?.getGraph?.() || Promise.resolve({ nodes: [], edges: [] }))
       .then(res => { setData(res); setLoading(false); })
       .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setDims({ w: Math.round(width), h: Math.round(height) });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   useEffect(() => {
@@ -74,36 +98,42 @@ export default function GraphView({ onNavigateToNote }) {
     return () => { if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; } };
   }, [data, dims.w, dims.h]);
 
-  useLayoutEffect(() => { syncDom(); });
+  useLayoutEffect(() => { syncDom(); }, [data]);
 
   function qs(sel) { return svgRef.current?.querySelector(sel); }
 
   function syncDom() {
     const svg = svgRef.current;
     if (!svg) return;
+    const newNodeEls = {};
     for (const n of nodesRef.current) {
       const g = qs(`[data-nid="${n.id}"]`);
       if (!g) continue;
-      const c = g.querySelector('.nc');
+      newNodeEls[n.id] = { g, c: g.querySelector('.nc'), t: g.querySelector('.ntt') };
+      const { c, t: tb } = newNodeEls[n.id];
       if (c) { c.setAttribute('cx', n.x); c.setAttribute('cy', n.y); }
-      const tb = g.querySelector('.ntt');
       if (tb) { tb.setAttribute('x', n.x); tb.setAttribute('y', n.y - NODE_RADIUS - 12); }
     }
+    nodeElRef.current = newNodeEls;
     if (data) {
+      const newEdgeEls = {};
       for (let i = 0; i < data.edges.length; i++) {
         const l = qs(`[data-eid="${i}"]`);
         if (!l) continue;
+        newEdgeEls[i] = l;
         const e = data.edges[i];
         const s = nodeMapRef.current.get(e.source_id);
         const t = nodeMapRef.current.get(e.target_id);
         if (s && t) { l.setAttribute('x1', s.x); l.setAttribute('y1', s.y); l.setAttribute('x2', t.x); l.setAttribute('y2', t.y); }
       }
+      edgeElRef.current = newEdgeEls;
     }
   }
 
   function startSimulation() {
     setSimulating(true);
     const step = (ts) => {
+      if (typeof ts !== 'number') ts = performance.now();
       if (!animStartRef.current) animStartRef.current = ts;
       const elapsed = ts - animStartRef.current;
       opacityRef.current = Math.min(1, elapsed / 700);
@@ -177,18 +207,19 @@ export default function GraphView({ onNavigateToNote }) {
       }
       const svg = svgRef.current;
       if (svg) {
+        const nEl = nodeElRef.current;
         for (const n of nodes) {
-          const g = qs(`[data-nid="${n.id}"]`);
-          if (!g) continue;
-          g.setAttribute('opacity', opacityRef.current);
-          const c = g.querySelector('.nc');
-          if (c) { c.setAttribute('cx', n.x); c.setAttribute('cy', n.y); }
-          const tb = g.querySelector('.ntt');
-          if (tb) { tb.setAttribute('x', n.x); tb.setAttribute('y', n.y - NODE_RADIUS - 12); }
+          const entry = nEl[n.id];
+          if (!entry) continue;
+          entry.g.setAttribute('opacity', opacityRef.current);
+          if (entry.c) { entry.c.setAttribute('cx', n.x); entry.c.setAttribute('cy', n.y); }
+          if (entry.t) { entry.t.setAttribute('x', n.x); entry.t.setAttribute('y', n.y - NODE_RADIUS - 12); }
         }
+        const sel = selectedRef.current;
+        const eEl = edgeElRef.current;
         if (data) {
           for (let i = 0; i < data.edges.length; i++) {
-            const l = qs(`[data-eid="${i}"]`);
+            const l = eEl[i];
             if (!l) continue;
             const e = data.edges[i];
             const s = nMap.get(e.source_id);
@@ -197,6 +228,8 @@ export default function GraphView({ onNavigateToNote }) {
               l.setAttribute('x1', s.x); l.setAttribute('y1', s.y);
               l.setAttribute('x2', t.x); l.setAttribute('y2', t.y);
             }
+            const hl = !sel || (e.source_id === sel || e.target_id === sel);
+            l.setAttribute('opacity', opacityRef.current * (hl ? 0.5 : 0.12));
           }
         }
       }
@@ -206,7 +239,7 @@ export default function GraphView({ onNavigateToNote }) {
       if (energy > ENERGY_THRESHOLD || elapsed < 3000) {
         rafRef.current = requestAnimationFrame(step);
       } else {
-        setSimulating(false);
+        if (mountedRef.current) setSimulating(false);
         rafRef.current = null;
       }
     };
@@ -218,8 +251,15 @@ export default function GraphView({ onNavigateToNote }) {
     setViewTransform(`translate(${panRef.current.x}, ${panRef.current.y}) scale(${zoomRef.current})`);
   }, []);
 
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const prevent = (e) => e.preventDefault();
+    svg.addEventListener('wheel', prevent, { passive: false });
+    return () => svg.removeEventListener('wheel', prevent);
+  }, []);
+
   const handleWheel = useCallback((e) => {
-    e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const nz = Math.max(0.2, Math.min(5, zoomRef.current * delta));
     const rect = svgRef.current.getBoundingClientRect();
@@ -242,6 +282,7 @@ export default function GraphView({ onNavigateToNote }) {
 
   const handleMouseMove = useCallback((e) => {
     if (dragNodeRef.current) {
+      wasDraggedRef.current = true;
       const rect = svgRef.current.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
@@ -268,7 +309,7 @@ export default function GraphView({ onNavigateToNote }) {
       if (!rafRef.current && wasDragging && startSimRef.current) {
         animStartRef.current = performance.now() - 2000;
         setSimulating(true);
-        startSimRef.current();
+        startSimRef.current(performance.now());
       }
     }
   }, []);
@@ -282,10 +323,11 @@ export default function GraphView({ onNavigateToNote }) {
     const svg = { x: (sx - panRef.current.x) / zoomRef.current, y: (sy - panRef.current.y) / zoomRef.current };
     dragNodeRef.current = node;
     dragOffsetRef.current = { x: svg.x - node.x, y: svg.y - node.y };
+    wasDraggedRef.current = false;
   }, []);
 
   const handleNodeClick = useCallback((nodeId) => {
-    if (dragNodeRef.current) return;
+    if (wasDraggedRef.current) { wasDraggedRef.current = false; return; }
     setSelected(prev => prev === nodeId ? null : nodeId);
   }, []);
 
@@ -346,8 +388,8 @@ export default function GraphView({ onNavigateToNote }) {
       <svg
         ref={svgRef}
         className="graph-svg"
-        width={dims.w}
-        height={dims.h}
+        width="100%"
+        height="100%"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
