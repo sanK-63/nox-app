@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import TaskDrawer from './TaskDrawer';
 import NotesPanel from './NotesPanel';
 import GraphView from './GraphView';
+import AIAssistant from './AIAssistant';
 import Toast from './Toast';
 import { useTasks } from '../hooks/useTasks';
 import { useGoogleSync } from '../hooks/useGoogleSync';
@@ -132,7 +133,7 @@ export default function Dashboard() {
       />
 
       <main className="main-content">
-        {activeTab !== 'notes' && (
+        {activeTab !== 'notes' && activeTab !== 'ai' && (
           <>
           <div className="day-progress-line" style={{ width: `${(new Date().getHours() * 60 + new Date().getMinutes()) / 1440 * 100}%` }}></div>
           <header className="content-header">
@@ -145,6 +146,8 @@ export default function Dashboard() {
         <div className="scroll-area">
           {activeTab === 'notes' ? (
             <NotesPanel tasks={tasks} />
+          ) : activeTab === 'ai' ? (
+            <AIAssistant onNavigateToNote={(id) => { localStorage.setItem('nox:activeNoteId', String(id)); setActiveTab('notes'); }} />
           ) : activeTab === 'tasks' ? (
             <>
               <input className="search-bar" placeholder="Поиск задач..." value={search} onChange={e => setSearch(e.target.value)} />

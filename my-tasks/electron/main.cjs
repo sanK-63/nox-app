@@ -3,6 +3,7 @@ const path = require('path');
 const url = require('url');
 const { setupDatabaseHandlers, getDb, replaceDb } = require('./database.cjs');
 const { setupSyncHandlers } = require('./sync.cjs');
+const { setupAiHandlers } = require('./ai/index.cjs');
 
 const envPath = app.isPackaged 
   ? path.join(process.resourcesPath, '.env') 
@@ -75,6 +76,7 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     setupDatabaseHandlers(ipcMain, app);
     setupSyncHandlers(ipcMain, app, getDb, replaceDb);
+    setupAiHandlers(ipcMain, getDb());
     
     ipcMain.handle('select-file', async () => {
       const result = await dialog.showOpenDialog({

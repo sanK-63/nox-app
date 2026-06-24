@@ -95,4 +95,20 @@ contextBridge.exposeInMainWorld('api', {
     moveNote: (noteId, folderId) => ipcRenderer.invoke('folders:moveNote', { noteId, folderId }),
     move: (id, parent_id) => ipcRenderer.invoke('folders:move', { id, parent_id }),
   },
+
+  // ===== AI API =====
+  ai: {
+    getStatus: () => ipcRenderer.invoke('ai:getStatus'),
+    setModel: (model) => ipcRenderer.invoke('ai:setModel', model),
+    ask: (query) => ipcRenderer.invoke('ai:ask', query),
+    expandThought: (thought) => ipcRenderer.invoke('ai:expandThought', thought),
+    semanticSearch: (query) => ipcRenderer.invoke('ai:semanticSearch', query),
+  },
+});
+
+// Listen for AI status updates from main process
+ipcRenderer.on('ai:status', (_event, status) => {
+  if (typeof window.__onAiStatus === 'function') {
+    window.__onAiStatus(status);
+  }
 });

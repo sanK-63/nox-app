@@ -23,7 +23,23 @@ export default function NotesPanel({ tasks }) {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => loadNumber(SIDEBAR_WIDTH_KEY, 280));
   const [filteredFolder, setFilteredFolder] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const resizing = useRef(false);
+
+  function saveNotesToStorage(notesList) {
+    try { localStorage.setItem('notes', JSON.stringify(notesList)); } catch {}
+  }
+
+  function loadNotesFromStorage() {
+    try {
+      const saved = localStorage.getItem('notes');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  }
+
+  function genId() {
+    return Date.now() + Math.floor(Math.random() * 1000);
+  }
 
   const loadNotes = useCallback(async () => {
     try {
@@ -33,7 +49,9 @@ export default function NotesPanel({ tasks }) {
         setNotes(data);
         return data;
       }
-      return [];
+      const data = loadNotesFromStorage();
+      setNotes(data);
+      return data;
     } catch (e) {
       showToast('Ошибка загрузки заметок');
       return [];
@@ -70,6 +88,10 @@ export default function NotesPanel({ tasks }) {
         if (updated) {
           setNotes(prev => prev.map(n => n.id === id ? { ...n, title: updated.title, content: updated.content, is_pinned: updated.is_pinned, color: updated.color, updated_at: updated.updated_at } : n));
         }
+      } else {
+        const stored = loadNotesFromStorage();
+        const found = stored.find(n => n.id === id);
+        if (found) setNotes(stored);
       }
     } catch (e) {
       showToast('Ошибка обновления заметки');
@@ -101,6 +123,12 @@ export default function NotesPanel({ tasks }) {
           setActiveNoteId(result.id);
           await loadNotes();
         }
+      } else {
+        const newNote = { id: genId(), title: 'Новая заметка', content: '', color: '#8b5cf6', is_pinned: 0, folder_id: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const updated = [...notes, newNote];
+        saveNotesToStorage(updated);
+        setNotes(updated);
+        setActiveNoteId(newNote.id);
       }
     } catch (e) {
       showToast('Ошибка создания заметки');
@@ -115,11 +143,16 @@ export default function NotesPanel({ tasks }) {
         await window.api.deleteNote(id);
         if (activeNoteId === id) setActiveNoteId(null);
         await loadNotes();
+      } else {
+        const updated = notes.filter(n => n.id !== id);
+        saveNotesToStorage(updated);
+        setNotes(updated);
+        if (activeNoteId === id) setActiveNoteId(null);
       }
     } catch (e) {
       showToast('Ошибка удаления заметки');
     }
-  }, [activeNoteId]);
+  }, [activeNoteId, notes]);
 
   const handleTogglePin = async (id, current, e) => {
     if (e) e.stopPropagation();
@@ -127,6 +160,10 @@ export default function NotesPanel({ tasks }) {
       if (window.api?.updateNote) {
         await window.api.updateNote({ id, is_pinned: !current });
         await loadNotes();
+      } else {
+        const updated = notes.map(n => n.id === id ? { ...n, is_pinned: current ? 0 : 1 } : n);
+        saveNotesToStorage(updated);
+        setNotes(updated);
       }
     } catch (e) {
       showToast('Ошибка изменения заметки');
@@ -151,6 +188,42 @@ export default function NotesPanel({ tasks }) {
       showToast('Ошибка дублирования');
     }
   };
+
+  const handleMoveToFolder = async (noteId) => {
+    try {
+      if (window.api?.folders?.list) {
+        const folders = await window.api.folders.list();
+        const choice = prompt('ID папки для перемещения (0 — убрать из папки):\n' +
+          folders.map(f => `${f.id}: ${f.name}`).join('\n'));
+        if (choice === null) return;
+        const folderId = parseInt(choice);
+        if (isNaN(folderId) || folderId === 0) {
+          await window.api.folders.moveNote(noteId, null);
+        } else {
+          await window.api.folders.moveNote(noteId, folderId);
+        }
+        await loadNotes();
+      }
+    } catch (e) {
+      showToast('Ошибка перемещения');
+    }
+  };
+
+  const handleContextMenu = (e, note) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, note });
+  };
+
+  useEffect(() => {
+    const close = () => setContextMenu(null);
+    const click = () => setContextMenu(null);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('click', click);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('click', click);
+    };
+  }, []);
 
   // Resizable sidebar
   const handleResizeStart = useCallback((e) => {
@@ -226,6 +299,10 @@ export default function NotesPanel({ tasks }) {
                   }
                 } else if (window.api?.updateNote) {
                   await window.api.updateNote(data);
+                } else {
+                  const updated = notes.map(n => n.id === data.id ? { ...n, ...data, updated_at: new Date().toISOString() } : n);
+                  saveNotesToStorage(updated);
+                  setNotes(updated);
                 }
                 await loadNotes();
                 if (activeNote) await refreshNote(activeNote.id);
@@ -247,6 +324,23 @@ export default function NotesPanel({ tasks }) {
         )}
       </div>
 
+      {contextMenu && (
+        <div className="note-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 9999 }}
+          onClick={() => setContextMenu(null)}>
+          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleTogglePin(contextMenu.note.id, contextMenu.note.is_pinned); setContextMenu(null); }}>
+            {contextMenu.note.is_pinned ? '📌 Открепить' : '📌 Закрепить'}
+          </div>
+          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleDuplicate(contextMenu.note.id); setContextMenu(null); }}>
+            📋 Дублировать
+          </div>
+          <div className="note-context-item" onClick={(e) => { e.stopPropagation(); handleMoveToFolder(contextMenu.note.id); setContextMenu(null); }}>
+            📂 Переместить в папку...
+          </div>
+          <div className="note-context-item danger" onClick={(e) => { e.stopPropagation(); handleDelete(contextMenu.note.id); setContextMenu(null); }}>
+            🗑 Удалить
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -424,9 +518,9 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
             if (partial.length > 0) {
               e.preventDefault();
               insertWikiLink(partial);
-              if (window.api?.addNote) {
+              if (window.api?.addNote && onCreateNote) {
                 window.api.addNote({ title: partial, content: '' })
-                  .then(r => { if (r?.id) showToast(`Создана заметка «${partial}»`); })
+                  .then(r => { if (r?.id) onCreateNote(r.id); })
                   .catch(() => showToast('Ошибка создания заметки'));
               }
             }
@@ -448,7 +542,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
   const handleSaveImmediate = () => saveCurrent(true);
 
   const handleWikiLink = async (linkTitle) => {
-    const found = notes.find(n => n.title === linkTitle);
+    const found = notes.find(n => n.title.toLowerCase() === linkTitle.toLowerCase());
     if (found && onNavigateToNote) {
       onNavigateToNote(found.id);
     } else if (window.api?.addNote && onCreateNote) {
@@ -468,6 +562,25 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
     setContent(newContent);
     contentRef.current = newContent;
     saveCurrent(true); // мгновенный save, без debounce
+  };
+
+  const handleTextareaClick = (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const val = contentRef.current;
+    if (!val) return;
+    const before = val.slice(0, pos);
+    const openIdx = before.lastIndexOf('[[');
+    if (openIdx === -1) return;
+    const after = val.slice(openIdx + 2);
+    const closeIdx = after.indexOf(']]');
+    if (closeIdx === -1 || openIdx + 2 + closeIdx < pos) return;
+    const title = after.slice(0, closeIdx).split('|')[0].trim();
+    if (!title) return;
+    e.preventDefault();
+    handleWikiLink(title);
   };
 
   const unlinkedTasks = useMemo(() => {
@@ -560,6 +673,7 @@ function NoteEditor({ note, onSave, tasks, notes, onNavigateToNote, onDelete, on
               value={content}
               onChange={handleContentChange}
               onKeyDown={handleWikiKeyDown}
+              onMouseUp={handleTextareaClick}
               placeholder="Начните писать... Поддерживается Markdown и [[ссылки]] на другие заметки"
             />
             {wikiSuggestions.length > 0 && (
