@@ -26,6 +26,9 @@ export default function Sidebar({ activeTab, setActiveTab, tasks, tags, activeTa
         <div className={`nav-item ${activeTab === 'graph' ? 'active' : ''}`} onClick={() => setActiveTab('graph')}>
           <span className="nav-item-text">Граф</span>
         </div>
+        <div className={`nav-item ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
+          <span className="nav-item-text">AI</span>
+        </div>
       </nav>
 
       <Pomodoro />

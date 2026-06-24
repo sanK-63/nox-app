@@ -176,6 +176,9 @@ function initDb(app) {
   try { db.exec("ALTER TABLE notes ADD COLUMN folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL;"); } catch(e) {}
   try { db.exec("CREATE INDEX IF NOT EXISTS idx_tasks_note_id ON tasks(note_id);"); } catch(e) {}
   try { db.exec("CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id);"); } catch(e) {}
+  try { db.exec("CREATE TABLE IF NOT EXISTS ai_cache (key TEXT PRIMARY KEY, response TEXT NOT NULL, model TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"); } catch(e) {}
+  try { db.exec("CREATE TABLE IF NOT EXISTS ai_rag_cache (query_hash TEXT PRIMARY KEY, query TEXT NOT NULL, response TEXT NOT NULL, sources TEXT NOT NULL, model TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"); } catch(e) {}
+  try { db.exec("CREATE TABLE IF NOT EXISTS ai_note_embeddings (note_id INTEGER PRIMARY KEY, vector BLOB NOT NULL, model TEXT NOT NULL, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"); } catch(e) {}
 
   console.log('Database initialized:', dbPath);
   checkDeadlines();
@@ -748,4 +751,4 @@ function setupDatabaseHandlers(ipcMain, app) {
   });
 }
 
-module.exports = { setupDatabaseHandlers, getDb, replaceDb };
+module.exports = { setupDatabaseHandlers, getDb, replaceDb, parseNoteContent };

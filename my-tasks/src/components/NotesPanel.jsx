@@ -26,6 +26,21 @@ export default function NotesPanel({ tasks }) {
   const [filteredFolder, setFilteredFolder] = useState(null);
   const resizing = useRef(false);
 
+  function saveNotesToStorage(notesList) {
+    try { localStorage.setItem('notes', JSON.stringify(notesList)); } catch {}
+  }
+
+  function loadNotesFromStorage() {
+    try {
+      const saved = localStorage.getItem('notes');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  }
+
+  function genId() {
+    return Date.now() + Math.floor(Math.random() * 1000);
+  }
+
   const loadNotes = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -34,7 +49,9 @@ export default function NotesPanel({ tasks }) {
         setNotes(data);
         return data;
       }
-      return [];
+      const data = loadNotesFromStorage();
+      setNotes(data);
+      return data;
     } catch (e) {
       showToast('Ошибка загрузки заметок');
       return [];
@@ -71,6 +88,10 @@ export default function NotesPanel({ tasks }) {
         if (updated) {
           setNotes(prev => prev.map(n => n.id === id ? { ...n, title: updated.title, content: updated.content, is_pinned: updated.is_pinned, color: updated.color, updated_at: updated.updated_at } : n));
         }
+      } else {
+        const stored = loadNotesFromStorage();
+        const found = stored.find(n => n.id === id);
+        if (found) setNotes(stored);
       }
     } catch (e) {
       showToast('Ошибка обновления заметки');
@@ -120,6 +141,12 @@ export default function NotesPanel({ tasks }) {
           setActiveNoteId(result.id);
           await loadNotes();
         }
+      } else {
+        const newNote = { id: genId(), title: 'Новая заметка', content: '', color: '#8b5cf6', is_pinned: 0, folder_id: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const updated = [...notes, newNote];
+        saveNotesToStorage(updated);
+        setNotes(updated);
+        setActiveNoteId(newNote.id);
       }
     } catch (e) {
       showToast('Ошибка создания заметки');
@@ -134,11 +161,16 @@ export default function NotesPanel({ tasks }) {
         await window.api.deleteNote(id);
         if (activeNoteId === id) setActiveNoteId(null);
         await loadNotes();
+      } else {
+        const updated = notes.filter(n => n.id !== id);
+        saveNotesToStorage(updated);
+        setNotes(updated);
+        if (activeNoteId === id) setActiveNoteId(null);
       }
     } catch (e) {
       showToast('Ошибка удаления заметки');
     }
-  }, [activeNoteId]);
+  }, [activeNoteId, notes]);
 
   const handleTogglePin = async (id, current, e) => {
     if (e) e.stopPropagation();
@@ -146,6 +178,10 @@ export default function NotesPanel({ tasks }) {
       if (window.api?.updateNote) {
         await window.api.updateNote({ id, is_pinned: !current });
         await loadNotes();
+      } else {
+        const updated = notes.map(n => n.id === id ? { ...n, is_pinned: current ? 0 : 1 } : n);
+        saveNotesToStorage(updated);
+        setNotes(updated);
       }
     } catch (e) {
       showToast('Ошибка изменения заметки');
@@ -300,6 +336,10 @@ export default function NotesPanel({ tasks }) {
                   }
                 } else if (window.api?.updateNote) {
                   await window.api.updateNote(data);
+                } else {
+                  const updated = notes.map(n => n.id === data.id ? { ...n, ...data, updated_at: new Date().toISOString() } : n);
+                  saveNotesToStorage(updated);
+                  setNotes(updated);
                 }
                 await loadNotes();
                 if (activeNote) await refreshNote(activeNote.id);

@@ -9,8 +9,29 @@ export default defineConfig({
     electron([
       {
         entry: 'electron/main.cjs',
+        vite: {
+          build: {
+            outDir: 'dist-electron',
+            minify: false,
+            rollupOptions: {
+              external: ['electron'],
+              output: {
+                format: 'cjs',
+              },
+            },
+          },
+        },
       },
     ]),
     renderer(),
   ],
+  server: {
+    proxy: {
+      '/ollama': {
+        target: 'http://localhost:11434',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ollama/, ''),
+      },
+    },
+  },
 });
